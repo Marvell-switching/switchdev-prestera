@@ -1,0 +1,16 @@
+# SPDX-License-Identifier: GPL-2.0-only
+#
+# Marvell switch drivers configuration
+#
+
+config MRVL_PRESTERA_SW
+	tristate "Marvell Technologies Prestera switchdev support"
+	depends on NET_SWITCHDEV
+	default m
+	---help---
+	  This driver supports Marvell Technologies Prestera Switchdev
+	  Ethernet Switch ASICs.
+
+	  To compile this driver as a module, choose M here: the
+	  module will be called prestera_sw.
+
