@@ -385,14 +385,16 @@ struct mvsw_msg_event_fdb {
 	union mvsw_msg_event_fdb_param param;
 } __packed __aligned(4);
 
-union mvsw_msg_event_port_param {
-	u32 oper_state;
-};
+struct mvsw_msg_event_port_param {
+	u8 oper_state;
+	u8 duplex;
+	u32 speed;
+} __packed __aligned(4);
 
 struct mvsw_msg_event_port {
 	struct mvsw_msg_event id;
 	u32 port_id;
-	union mvsw_msg_event_port_param param;
+	struct mvsw_msg_event_port_param param;
 } __packed __aligned(4);
 
 struct mvsw_msg_bridge_cmd {
@@ -577,11 +579,13 @@ static int fw_parse_port_evt(u8 *msg, struct mvsw_pr_event *evt)
 
 	evt->port_evt.port_id = hw_evt->port_id;
 
-	if (evt->id == MVSW_PORT_EVENT_STATE_CHANGED)
+	if (evt->id == MVSW_PORT_EVENT_STATE_CHANGED) {
 		evt->port_evt.data.oper_state = hw_evt->param.oper_state;
-	else
+		evt->port_evt.data.duplex = hw_evt->param.duplex;
+		evt->port_evt.data.speed = hw_evt->param.speed;
+	} else {
 		return -EINVAL;
-
+	}
 	return 0;
 }
 

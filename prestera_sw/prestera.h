@@ -98,6 +98,9 @@ struct mvsw_pr_port {
 	u16 fp_id;
 	u16 pvid;
 	bool autoneg;
+	bool hw_oper_state; /* RS (PCS) */
+	u32 hw_speed;
+	u8 hw_duplex;
 	u64 adver_link_modes;
 	u8 adver_fec;
 	u16 lag_id;
@@ -198,8 +201,10 @@ struct mvsw_pr_fdb_event {
 
 struct mvsw_pr_port_event {
 	u32 port_id;
-	union {
-		u32 oper_state;
+	struct {
+		u8 oper_state;
+		u8 duplex;
+		u32 speed;
 	} data;
 };
 
