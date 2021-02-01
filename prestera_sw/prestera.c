@@ -780,9 +780,10 @@ bool mvsw_pr_netdev_check(const struct net_device *dev)
 	return dev->netdev_ops == &mvsw_pr_netdev_ops;
 }
 
-static int mvsw_pr_lower_dev_walk(struct net_device *lower_dev, void *data)
+static int mvsw_pr_lower_dev_walk(struct net_device *lower_dev,
+	struct netdev_nested_priv  *priv)
 {
-	struct mvsw_pr_port **pport = data;
+	struct mvsw_pr_port **pport = (struct mvsw_pr_port **)priv->data;
 
 	if (mvsw_pr_netdev_check(lower_dev)) {
 		*pport = netdev_priv(lower_dev);
@@ -794,7 +795,10 @@ static int mvsw_pr_lower_dev_walk(struct net_device *lower_dev, void *data)
 
 struct mvsw_pr_port *mvsw_pr_port_dev_lower_find(struct net_device *dev)
 {
-	struct mvsw_pr_port *port;
+	struct mvsw_pr_port *port = NULL;
+	struct netdev_nested_priv priv = {
+		.data = (void *)&port,
+	};
 
 	if (!dev)
 		return NULL;
@@ -803,7 +807,7 @@ struct mvsw_pr_port *mvsw_pr_port_dev_lower_find(struct net_device *dev)
 		return netdev_priv(dev);
 
 	port = NULL;
-	netdev_walk_all_lower_dev(dev, mvsw_pr_lower_dev_walk, &port);
+	netdev_walk_all_lower_dev(dev, mvsw_pr_lower_dev_walk, &priv);
 
 	return port;
 }
@@ -1156,6 +1160,7 @@ static int mvsw_pr_port_get_link_ksettings(struct net_device *dev,
 	ethtool_link_ksettings_zero_link_mode(ecmd, lp_advertising);
 	ecmd->base.speed = SPEED_UNKNOWN;
 	ecmd->base.duplex = DUPLEX_UNKNOWN;
+	ecmd->base.autoneg = AUTONEG_DISABLE;
 #ifdef CONFIG_PHYLINK
 	if (port->caps.transceiver == MVSW_PORT_TRANSCEIVER_SFP)
 		return phylink_ethtool_ksettings_get(port->phy_link, ecmd);
@@ -1560,7 +1565,7 @@ static void mvsw_pr_mac_pcs_get_state(struct phylink_config *config,
 	struct net_device *ndev = to_net_dev(config->dev);
 	struct mvsw_pr_port *port = netdev_priv(ndev);
 
-	state->link = port->hw_oper_state;
+	state->link = !!(port->hw_oper_state);
 	state->pause = 0;
 
 	if (port->hw_oper_state) {
@@ -1637,8 +1642,10 @@ static void mvsw_pr_mac_link_down(struct phylink_config *config,
 }
 
 static void mvsw_pr_mac_link_up(struct phylink_config *config,
+				struct phy_device *phy,
 				unsigned int mode, phy_interface_t interface,
-				struct phy_device *phy)
+				int speed, int duplex,
+				bool tx_pause, bool rx_pause)
 {
 }
 

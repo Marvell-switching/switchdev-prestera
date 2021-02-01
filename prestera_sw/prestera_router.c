@@ -11,6 +11,7 @@
 #include <linux/inetdevice.h>
 #include <linux/netdevice.h>
 #include <linux/if_bridge.h>
+#include <linux/rhashtable.h>
 #include <net/netevent.h>
 #include <net/neighbour.h>
 #include <net/addrconf.h>
@@ -2601,9 +2602,10 @@ int mvsw_pr_netdevice_vrf_event(struct net_device *dev, unsigned long event,
 	return err;
 }
 
-static int __mvsw_pr_rif_macvlan_flush(struct net_device *dev, void *data)
+static int __mvsw_pr_rif_macvlan_flush(struct net_device *dev,
+				       struct netdev_nested_priv *priv)
 {
-	struct mvsw_pr_rif *rif = data;
+	struct mvsw_pr_rif *rif = priv->data;
 
 	if (!netif_is_macvlan(dev))
 		return 0;
@@ -2613,13 +2615,17 @@ static int __mvsw_pr_rif_macvlan_flush(struct net_device *dev, void *data)
 
 static int mvsw_pr_rif_macvlan_flush(struct mvsw_pr_rif *rif)
 {
+	struct netdev_nested_priv priv = {
+		.data = (void *)rif,
+	};
+
 	if (!netif_is_macvlan_port(rif->dev))
 		return 0;
 
 	netdev_warn(rif->dev,
 		    "Router interface is deleted. Upper macvlans will not work\n");
 	return netdev_walk_all_upper_dev_rcu(rif->dev,
-					     __mvsw_pr_rif_macvlan_flush, rif);
+					     __mvsw_pr_rif_macvlan_flush, &priv);
 }
 
 #ifdef CONFIG_IP_ROUTE_MULTIPATH
@@ -3036,10 +3042,10 @@ void prestera_lag_router_leave(struct mvsw_pr_switch *sw,
 }
 
 static int mvsw_pr_bridge_device_rif_put(struct net_device *bridge_dev,
-					 void *data)
+					struct netdev_nested_priv *priv)
 {
 	struct mvsw_pr_rif *rif;
-	struct mvsw_pr_switch *sw = data;
+	struct mvsw_pr_switch *sw = priv->data;
 
 	rif = mvsw_pr_rif_find(sw, bridge_dev);
 	if (rif) {
@@ -3053,8 +3059,11 @@ static int mvsw_pr_bridge_device_rif_put(struct net_device *bridge_dev,
 void mvsw_pr_bridge_device_rifs_destroy(struct mvsw_pr_switch *sw,
 					struct net_device *bridge_dev)
 {
-	mvsw_pr_bridge_device_rif_put(bridge_dev, sw);
+	struct netdev_nested_priv priv = {
+		.data = (void *)sw,
+	};
+	mvsw_pr_bridge_device_rif_put(bridge_dev, &priv);
 	netdev_walk_all_upper_dev_rcu(bridge_dev,
 				      mvsw_pr_bridge_device_rif_put,
-				      sw);
+				      &priv);
 }

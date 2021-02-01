@@ -424,6 +424,7 @@ int mvsw_pr_flower_stats(struct mvsw_pr_switch *sw,
 	if (err)
 		return err;
 
-	flow_stats_update(&f->stats, bytes, packets, lastuse);
+	flow_stats_update(&f->stats, bytes, packets, 0, lastuse,
+			  FLOW_ACTION_HW_STATS_IMMEDIATE);
 	return 0;
 }

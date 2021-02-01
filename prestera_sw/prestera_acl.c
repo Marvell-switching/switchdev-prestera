@@ -3,6 +3,8 @@
 // Copyright (c) 2020 Marvell International Ltd. All rights reserved.
 //
 
+#include <linux/rhashtable.h>
+
 #include "prestera.h"
 #include "prestera_hw.h"
 

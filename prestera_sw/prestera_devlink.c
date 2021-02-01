@@ -70,11 +70,15 @@ int prestera_devlink_port_register(struct mvsw_pr_port *port)
 {
 	struct mvsw_pr_switch *sw = port->sw;
 	struct devlink *dl = priv_to_devlink(sw);
+	struct devlink_port_attrs attrs = {};
 	int err;
 
-	devlink_port_attrs_set(&port->dl_port, DEVLINK_PORT_FLAVOUR_PHYSICAL,
-			       port->fp_id, false, 0, &port->sw->id,
-			       sizeof(port->sw->id));
+	attrs.flavour = DEVLINK_PORT_FLAVOUR_PHYSICAL;
+	attrs.phys.port_number = port->fp_id;
+	attrs.switch_id.id_len = sizeof(sw->id);
+	memcpy(attrs.switch_id.id, &sw->id, attrs.switch_id.id_len);
+
+	devlink_port_attrs_set(&port->dl_port, &attrs);
 
 	err = devlink_port_register(dl, &port->dl_port, port->fp_id);
 	if (err) {
