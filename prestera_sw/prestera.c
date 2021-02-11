@@ -20,6 +20,7 @@
 #include <linux/of_net.h>
 
 #include "prestera.h"
+#include "prestera_log.h"
 #include "prestera_hw.h"
 #include "prestera_debugfs.h"
 #include "prestera_devlink.h"
@@ -367,6 +368,12 @@ static int mvsw_pr_port_state_set(struct net_device *dev, bool is_up)
 
 static int mvsw_pr_port_open(struct net_device *dev)
 {
+#ifdef CONFIG_PHYLINK
+	struct mvsw_pr_port *port = netdev_priv(dev);
+
+	if (port->caps.transceiver == MVSW_PORT_TRANSCEIVER_SFP)
+		phylink_start(port->phy_link);
+#endif
 	return mvsw_pr_port_state_set(dev, true);
 }
 
@@ -376,6 +383,10 @@ static int mvsw_pr_port_close(struct net_device *dev)
 
 	mvsw_pr_fdb_flush_port(port, MVSW_PR_FDB_FLUSH_MODE_DYNAMIC);
 
+#ifdef CONFIG_PHYLINK
+	if (port->caps.transceiver == MVSW_PORT_TRANSCEIVER_SFP)
+		phylink_stop(port->phy_link);
+#endif
 	return mvsw_pr_port_state_set(dev, false);
 }
 
@@ -857,7 +868,8 @@ static void mvsw_pr_port_autoneg_get(struct ethtool_link_ksettings *ecmd,
 }
 
 static int mvsw_modes_from_eth(struct mvsw_pr_port *port,
-			       const struct ethtool_link_ksettings *ecmd,
+			       const unsigned long *advertising,
+			       const unsigned long *supported,
 			       u64 *link_modes, u8 *fec)
 {
 	struct ethtool_link_ksettings curr = {};
@@ -868,15 +880,13 @@ static int mvsw_modes_from_eth(struct mvsw_pr_port *port,
 
 	mvsw_pr_port_autoneg_get(&curr, port);
 
-	if (linkmode_equal(ecmd->link_modes.advertising,
-			   curr.link_modes.advertising)) {
+	if (linkmode_equal(advertising, curr.link_modes.advertising)) {
 		*link_modes = port->adver_link_modes;
 		*fec = port->adver_fec;
 		return 0;
 	}
 
-	if (!linkmode_subset(ecmd->link_modes.advertising,
-			     ecmd->link_modes.supported)) {
+	if (!linkmode_subset(advertising, supported)) {
 		netdev_err(port->net_dev, "Unsupported link mode requested");
 		return -EINVAL;
 	}
@@ -884,8 +894,7 @@ static int mvsw_modes_from_eth(struct mvsw_pr_port *port,
 	*link_modes  = 0;
 	*fec = 0;
 	for (mode = 0; mode < MVSW_LINK_MODE_MAX; mode++) {
-		if (!test_bit(mvsw_pr_link_modes[mode].eth_mode,
-			      ecmd->link_modes.advertising))
+		if (!test_bit(mvsw_pr_link_modes[mode].eth_mode, advertising))
 			continue;
 		if (mvsw_pr_link_modes[mode].port_type != port->caps.type)
 			continue;
@@ -893,8 +902,7 @@ static int mvsw_modes_from_eth(struct mvsw_pr_port *port,
 	}
 
 	for (mode = 0; mode < MVSW_PORT_FEC_MAX; mode++) {
-		if (!test_bit(mvsw_pr_fec_caps[mode].eth_mode,
-			      ecmd->link_modes.advertising))
+		if (!test_bit(mvsw_pr_fec_caps[mode].eth_mode, advertising))
 			continue;
 		*fec |= mvsw_pr_fec_caps[mode].pr_fec;
 	}
@@ -1138,9 +1146,20 @@ static int mvsw_pr_port_get_link_ksettings(struct net_device *dev,
 {
 	struct mvsw_pr_port *port = netdev_priv(dev);
 
+	/* Dirty hook: Deinit ecmd.
+	 * It caused by suspicious phylink_ethtool_ksettings_get()
+	 * implementation, which can left "kset" uninitialized, when there is no
+	 * SFP plugged
+	 */
 	ethtool_link_ksettings_zero_link_mode(ecmd, supported);
 	ethtool_link_ksettings_zero_link_mode(ecmd, advertising);
 	ethtool_link_ksettings_zero_link_mode(ecmd, lp_advertising);
+	ecmd->base.speed = SPEED_UNKNOWN;
+	ecmd->base.duplex = DUPLEX_UNKNOWN;
+#ifdef CONFIG_PHYLINK
+	if (port->caps.transceiver == MVSW_PORT_TRANSCEIVER_SFP)
+		return phylink_ethtool_ksettings_get(port->phy_link, ecmd);
+#endif /* CONFIG_PHYLINK */
 
 	mvsw_pr_port_supp_types_get(ecmd, port);
 
@@ -1177,6 +1196,11 @@ static int mvsw_pr_port_set_link_ksettings(struct net_device *dev,
 	u8 adver_fec = 0;
 	int err;
 
+#ifdef CONFIG_PHYLINK
+	if (port->caps.transceiver == MVSW_PORT_TRANSCEIVER_SFP)
+		return phylink_ethtool_ksettings_set(port->phy_link, ecmd);
+#endif /* CONFIG_PHYLINK */
+
 	err = mvsw_pr_port_type_set(ecmd, port);
 	if (err)
 		return err;
@@ -1188,7 +1212,9 @@ static int mvsw_pr_port_set_link_ksettings(struct net_device *dev,
 	}
 
 	if (ecmd->base.autoneg == AUTONEG_ENABLE) {
-		if (mvsw_modes_from_eth(port, ecmd, &adver_modes, &adver_fec))
+		if (mvsw_modes_from_eth(port, ecmd->link_modes.advertising,
+					ecmd->link_modes.supported,
+					&adver_modes, &adver_fec))
 			return -EINVAL;
 		if (!port->autoneg && !adver_modes)
 			adver_modes = port->caps.supp_link_modes;
@@ -1460,23 +1486,149 @@ int mvsw_pr_port_vlan_set(struct mvsw_pr_port *port, u16 vid,
 
 #ifdef CONFIG_PHYLINK
 static void mvsw_pr_link_validate(struct phylink_config *config,
-				  unsigned long *supp,
-				  struct phylink_link_state *state)
+	unsigned long *supported,
+	struct phylink_link_state *state)
 {
+	__ETHTOOL_DECLARE_LINK_MODE_MASK(mask) = {0,};
+
+	if (state->interface != PHY_INTERFACE_MODE_NA &&
+	    state->interface != PHY_INTERFACE_MODE_10GBASER &&
+	    state->interface != PHY_INTERFACE_MODE_SGMII &&
+	    !phy_interface_mode_is_8023z(state->interface)) {
+		bitmap_zero(supported, __ETHTOOL_LINK_MODE_MASK_NBITS);
+		return;
+	}
+
+	switch (state->interface) {
+	case PHY_INTERFACE_MODE_10GBASER:
+	case PHY_INTERFACE_MODE_NA:
+		phylink_set(mask, 10000baseT_Full);
+		phylink_set(mask, 10000baseCR_Full);
+		phylink_set(mask, 10000baseSR_Full);
+		phylink_set(mask, 10000baseLR_Full);
+		phylink_set(mask, 10000baseLRM_Full);
+		phylink_set(mask, 10000baseER_Full);
+		phylink_set(mask, 10000baseKR_Full);
+		phylink_set(mask, 10000baseKX4_Full);
+		phylink_set(mask, 10000baseR_FEC);
+
+		if (state->interface != PHY_INTERFACE_MODE_NA)
+			break;
+		/* Fall-through */
+	case PHY_INTERFACE_MODE_SGMII:
+		phylink_set(mask, 10baseT_Full);
+		phylink_set(mask, 100baseT_Full);
+		phylink_set(mask, 1000baseT_Full);
+		if (state->interface != PHY_INTERFACE_MODE_NA) {
+			phylink_set(mask, Autoneg);
+			break;
+		}
+		/* Fall-through */
+	case PHY_INTERFACE_MODE_2500BASEX:
+		phylink_set(mask, 2500baseT_Full);
+		phylink_set(mask, 2500baseX_Full);
+		if (state->interface != PHY_INTERFACE_MODE_NA)
+			break;
+		/* Fall-through */
+	case PHY_INTERFACE_MODE_1000BASEX:
+		phylink_set(mask, 1000baseT_Full);
+		phylink_set(mask, 1000baseX_Full);
+		break;
+	default:
+		goto empty_set;
+	}
+
+	phylink_set_port_modes(mask);
+
+	bitmap_and(supported, supported, mask,
+		__ETHTOOL_LINK_MODE_MASK_NBITS);
+	bitmap_and(state->advertising, state->advertising, mask,
+		__ETHTOOL_LINK_MODE_MASK_NBITS);
+
+	phylink_helper_basex_speed(state);
+
+	return;
+
+empty_set:
+	bitmap_zero(supported, __ETHTOOL_LINK_MODE_MASK_NBITS);
+
 }
 
 static void mvsw_pr_mac_pcs_get_state(struct phylink_config *config,
 				      struct phylink_link_state *state)
 {
+	struct net_device *ndev = to_net_dev(config->dev);
+	struct mvsw_pr_port *port = netdev_priv(ndev);
+
+	state->link = port->hw_oper_state;
+	state->pause = 0;
+
+	if (port->hw_oper_state) {
+		/* AN is completed, when port is up */
+		state->an_complete = port->autoneg;
+
+		state->speed = port->hw_speed;
+		state->duplex = (port->hw_duplex == MVSW_PORT_DUPLEX_FULL) ?
+					DUPLEX_FULL : DUPLEX_HALF;
+	} else {
+		state->an_complete = false;
+		state->speed = SPEED_UNKNOWN;
+		state->duplex = DUPLEX_UNKNOWN;
+	}
 }
 
-static void mvsw_pr_mac_config(struct phylink_config *config, unsigned int mode,
+static void mvsw_pr_mac_config(struct phylink_config *config,
+			       unsigned int an_mode,
 			       const struct phylink_link_state *state)
 {
+	struct net_device *ndev = to_net_dev(config->dev);
+	struct mvsw_pr_port *port = netdev_priv(ndev);
+	u32 mode;
+
+	/* See sfp_select_interface... fIt */
+	switch (state->interface) {
+	case PHY_INTERFACE_MODE_10GBASER:
+		/* Or SR... doesn't matter */
+		mode = MVSW_LINK_MODE_10GbaseLR_Full_BIT;
+		if (state->speed == SPEED_1000)
+			mode = MVSW_LINK_MODE_1000baseX_Full_BIT;
+		if (state->speed == SPEED_2500)
+			mode = MVSW_LINK_MODE_2500baseX_Full_BIT;
+		break;
+	case PHY_INTERFACE_MODE_2500BASEX:
+		/* But it seems to be not supported in HW */
+		mode = MVSW_LINK_MODE_2500baseX_Full_BIT;
+		break;
+	case PHY_INTERFACE_MODE_SGMII:
+		/* Can be T or X. But for HW is no difference. */
+		mode = MVSW_LINK_MODE_1000baseT_Full_BIT;
+		break;
+	case PHY_INTERFACE_MODE_1000BASEX:
+		mode = MVSW_LINK_MODE_1000baseX_Full_BIT;
+		break;
+	default:
+		mode = MVSW_LINK_MODE_1000baseX_Full_BIT;
+	}
+
+	mvsw_pr_hw_port_link_mode_set(port, mode);
+
+	/* NOTE: we suppose, that inband autoneg is primary used for
+	 * modes, which support only FC autonegotiation. But we don't support
+	 * FC. So inband autoneg always be disabled.
+	 */
+
+	if (phylink_autoneg_inband(an_mode))
+		mvsw_pr_port_autoneg_set(port, false, 0, 0);
+	else
+		mvsw_pr_port_autoneg_set(port, false, 0, 0);
 }
 
 static void mvsw_pr_mac_an_restart(struct phylink_config *config)
 {
+	/* No need to restart autoneg as it is always with the same parameters,
+	 * because e.g. as for 1000baseX FC isn't supported. And for 1000baseT
+	 * autoneg provided by external tranciever
+	 */
 }
 
 static void mvsw_pr_mac_link_down(struct phylink_config *config,
@@ -1530,7 +1682,7 @@ static int mvsw_pr_port_sfp_bind(struct mvsw_pr_port *port)
 
 		port->phy_config.dev = &port->net_dev->dev;
 		port->phy_config.type = PHYLINK_NETDEV;
-		port->phy_config.pcs_poll = true;
+		port->phy_config.pcs_poll = false;
 
 		fwnode = of_fwnode_handle(node);
 
@@ -1594,8 +1746,7 @@ static int mvsw_pr_port_create(struct mvsw_pr_switch *sw, u32 id)
 	net_dev->hw_features |= NETIF_F_HW_TC;
 	net_dev->ethtool_ops = &mvsw_pr_ethtool_ops;
 	net_dev->netdev_ops = &mvsw_pr_netdev_ops;
-
-	netif_carrier_off(net_dev);
+	SET_NETDEV_DEV(net_dev, sw->dev->dev);
 
 	net_dev->mtu = min_t(unsigned int, sw->mtu_max, MVSW_PR_MTU_DEFAULT);
 	net_dev->min_mtu = sw->mtu_min;
@@ -1626,6 +1777,13 @@ static int mvsw_pr_port_create(struct mvsw_pr_switch *sw, u32 id)
 		dev_err(mvsw_dev(sw), "Failed to get port(%u) caps\n", id);
 		goto err_port_init;
 	}
+
+#ifdef CONFIG_PHYLINK
+	if (port->caps.transceiver != MVSW_PORT_TRANSCEIVER_SFP)
+		netif_carrier_off(net_dev);
+#else
+	netif_carrier_off(net_dev);
+#endif
 
 	port->adver_link_modes = 0;
 	port->adver_fec = 0;
@@ -2002,11 +2160,11 @@ static int mvsw_pr_clear_ports(struct mvsw_pr_switch *sw)
 
 		cancel_delayed_work_sync(&port->cached_hw_stats.caching_dw);
 		prestera_devlink_port_clear(port);
+		unregister_netdev(net_dev);
 #ifdef CONFIG_PHYLINK
 		if (port->phy_link)
 			phylink_destroy(port->phy_link);
 #endif
-		unregister_netdev(net_dev);
 		mvsw_pr_port_vlan_flush(port, true);
 		WARN_ON_ONCE(!list_empty(&port->vlans_list));
 		mvsw_pr_port_router_leave(port);
@@ -2031,12 +2189,36 @@ static void mvsw_pr_port_handle_event(struct mvsw_pr_switch *sw,
 
 	switch (evt->id) {
 	case MVSW_PORT_EVENT_STATE_CHANGED:
-		if (evt->port_evt.data.oper_state) {
+		port->hw_oper_state = evt->port_evt.data.oper_state;
+
+		if (port->hw_oper_state) {
+			port->hw_duplex = evt->port_evt.data.duplex;
+			port->hw_speed = evt->port_evt.data.speed;
+#ifdef CONFIG_PHYLINK
+			if (port->caps.transceiver ==
+			    MVSW_PORT_TRANSCEIVER_SFP)
+				phylink_mac_change(port->phy_link, true);
+			else
+				netif_carrier_on(port->net_dev);
+#else
 			netif_carrier_on(port->net_dev);
+#endif
+
 			if (!delayed_work_pending(caching_dw))
 				queue_delayed_work(mvsw_pr_wq, caching_dw, 0);
 		} else {
+			port->hw_duplex = 0;
+			port->hw_speed = 0;
+#ifdef CONFIG_PHYLINK
+			if (port->caps.transceiver ==
+			    MVSW_PORT_TRANSCEIVER_SFP)
+				phylink_mac_change(port->phy_link, false);
+			else
+				netif_carrier_off(port->net_dev);
+#else
 			netif_carrier_off(port->net_dev);
+#endif
+
 			if (delayed_work_pending(caching_dw))
 				cancel_delayed_work(caching_dw);
 		}

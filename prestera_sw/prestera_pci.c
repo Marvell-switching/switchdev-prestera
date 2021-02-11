@@ -16,7 +16,7 @@
 #define MVSW_FW_FILENAME	"marvell/mvsw_prestera_fw.img"
 
 #define MVSW_SUPP_FW_MAJ_VER 2
-#define MVSW_SUPP_FW_MIN_VER 6
+#define MVSW_SUPP_FW_MIN_VER 8
 #define MVSW_SUPP_FW_PATCH_VER 0
 
 #define mvsw_wait_timeout(cond, waitms) \
