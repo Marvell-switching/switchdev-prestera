@@ -1,8 +1,6 @@
-/* SPDX-License-Identifier: BSD-3-Clause OR GPL-2.0
- *
- * Copyright (c) 2019-2020 Marvell International Ltd. All rights reserved.
- *
- */
+// SPDX-License-Identifier: BSD-3-Clause OR GPL-2.0
+/* Copyright (c) 2019-2021 Marvell International Ltd. All rights reserved */
+
 #include <linux/sysfs.h>
 #include <linux/fs.h>
 #include <linux/etherdevice.h>
@@ -28,8 +26,8 @@
 
 #define mvsw_dev(sw)		((sw)->dev->dev)
 
-static void mvsw_pr_fw_log_evt_handler(struct mvsw_pr_switch *,
-				       struct mvsw_pr_event *,
+static void mvsw_pr_fw_log_evt_handler(struct prestera_switch *,
+				       struct prestera_event *,
 				       void *);
 static ssize_t mvsw_pr_fw_log_debugfs_read(struct file *file,
 					   char __user *ubuf,
@@ -40,8 +38,8 @@ static ssize_t mvsw_pr_fw_log_debugfs_write(struct file *file,
 static inline int mvsw_pr_fw_log_get_type_from_str(const char *str);
 static inline int mvsw_pr_fw_log_get_lib_from_str(const char *str);
 
-static int mvsw_pr_fw_log_event_handler_register(struct mvsw_pr_switch *sw);
-static void mvsw_pr_fw_log_event_handler_unregister(struct mvsw_pr_switch *sw);
+static int mvsw_pr_fw_log_event_handler_register(struct prestera_switch *sw);
+static void mvsw_pr_fw_log_event_handler_unregister(struct prestera_switch *sw);
 
 struct mvsw_pr_fw_log_prv_debugfs {
 	struct dentry *cfg_dir;
@@ -126,8 +124,8 @@ static const char *mvsw_pr_fw_log_prv_type_id2name[MVSW_FW_LOG_TYPE_MAX] = {
 	[MVSW_FW_LOG_TYPE_NONE]  = "none",
 };
 
-static void mvsw_pr_fw_log_evt_handler(struct mvsw_pr_switch *sw,
-				       struct mvsw_pr_event *evt, void *arg)
+static void mvsw_pr_fw_log_evt_handler(struct prestera_switch *sw,
+				       struct prestera_event *evt, void *arg)
 {
 	u32 log_len = evt->fw_log_evt.log_len;
 	u8 *buf = evt->fw_log_evt.data;
@@ -269,7 +267,7 @@ static ssize_t mvsw_pr_fw_log_debugfs_write(struct file *file,
 					    const char __user *ubuf,
 					    size_t count, loff_t *ppos)
 {
-	struct mvsw_pr_switch *sw = file->private_data;
+	struct prestera_switch *sw = file->private_data;
 	int lib, type;
 	int i, j;
 	int err;
@@ -358,19 +356,19 @@ static inline int mvsw_pr_fw_log_get_lib_from_str(const char *str)
 	return MVSW_FW_LOG_LIB_MAX;
 }
 
-static int mvsw_pr_fw_log_event_handler_register(struct mvsw_pr_switch *sw)
+static int mvsw_pr_fw_log_event_handler_register(struct prestera_switch *sw)
 {
 	return mvsw_pr_hw_event_handler_register(sw, MVSW_EVENT_TYPE_FW_LOG,
 						 mvsw_pr_fw_log_evt_handler,
 						 NULL);
 }
 
-static void mvsw_pr_fw_log_event_handler_unregister(struct mvsw_pr_switch *sw)
+static void mvsw_pr_fw_log_event_handler_unregister(struct prestera_switch *sw)
 {
 	mvsw_pr_hw_event_handler_unregister(sw, MVSW_EVENT_TYPE_FW_LOG);
 }
 
-int mvsw_pr_fw_log_init(struct mvsw_pr_switch *sw)
+int mvsw_pr_fw_log_init(struct prestera_switch *sw)
 {
 	fw_log_debugfs_handle.cfg_dir =
 		debugfs_create_dir(FW_LOG_DBGFS_CFG_DIR, NULL);
@@ -411,7 +409,7 @@ error:
 	return -1;
 }
 
-void mvsw_pr_fw_log_fini(struct mvsw_pr_switch *sw)
+void mvsw_pr_fw_log_fini(struct prestera_switch *sw)
 {
 	mvsw_pr_fw_log_event_handler_unregister(sw);
 

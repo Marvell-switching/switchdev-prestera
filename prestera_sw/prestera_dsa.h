@@ -1,8 +1,6 @@
-/* SPDX-License-Identifier: BSD-3-Clause OR GPL-2.0
- *
- * Copyright (c) 2020 Marvell International Ltd. All rights reserved.
- *
- */
+/* SPDX-License-Identifier: BSD-3-Clause OR GPL-2.0 */
+/* Copyright (c) 2019-2021 Marvell International Ltd. All rights reserved. */
+
 #ifndef _MVSW_PRESTERA_DSA_H_
 #define _MVSW_PRESTERA_DSA_H_
 
@@ -42,7 +40,7 @@ struct mvsw_pr_dsa_to_cpu {
 };
 
 struct mvsw_pr_dsa_from_cpu {
-	struct mvsw_pr_iface dst_iface;	/* vid/port */
+	struct prestera_iface dst_iface;	/* vid/port */
 	bool egr_filter_en;
 	bool egr_filter_registered;
 	u32 src_id;
