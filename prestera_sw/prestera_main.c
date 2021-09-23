@@ -679,6 +679,8 @@ static void prestera_link_validate(struct phylink_config *config,
 	case PHY_INTERFACE_MODE_1000BASEX:
 		phylink_set(mask, 1000baseT_Full);
 		phylink_set(mask, 1000baseX_Full);
+		if (state->interface != PHY_INTERFACE_MODE_NA)
+			phylink_set(mask, Autoneg);
 		break;
 	default:
 		goto empty_set;
