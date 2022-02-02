@@ -1,7 +1,7 @@
 # Switchdev-prestera
 Marvell Prestera Switchdev Repository. 
 
-For more information, please check our [wiki](../../../wiki)
+For more information, please check our [wiki](../../wiki)
 
 Features by Linux kernel version
 
