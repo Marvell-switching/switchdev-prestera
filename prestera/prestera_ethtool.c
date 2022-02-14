@@ -26,180 +26,180 @@ struct prestera_link_mode {
 };
 
 static const struct prestera_link_mode
-prestera_link_modes[MVSW_LINK_MODE_MAX] = {
-	[MVSW_LINK_MODE_10baseT_Half_BIT] = {
+prestera_link_modes[PRESTERA_LINK_MODE_MAX] = {
+	[PRESTERA_LINK_MODE_10baseT_Half] = {
 		.eth_mode =  ETHTOOL_LINK_MODE_10baseT_Half_BIT,
 		.speed = 10,
-		.pr_mask = 1 << MVSW_LINK_MODE_10baseT_Half_BIT,
-		.duplex = MVSW_PORT_DUPLEX_HALF,
-		.port_type = MVSW_PORT_TYPE_TP,
+		.pr_mask = 1 << PRESTERA_LINK_MODE_10baseT_Half,
+		.duplex = PRESTERA_PORT_DUPLEX_HALF,
+		.port_type = PRESTERA_PORT_TYPE_TP,
 	},
-	[MVSW_LINK_MODE_10baseT_Full_BIT] = {
+	[PRESTERA_LINK_MODE_10baseT_Full] = {
 		.eth_mode =  ETHTOOL_LINK_MODE_10baseT_Full_BIT,
 		.speed = 10,
-		.pr_mask = 1 << MVSW_LINK_MODE_10baseT_Full_BIT,
-		.duplex = MVSW_PORT_DUPLEX_FULL,
-		.port_type = MVSW_PORT_TYPE_TP,
+		.pr_mask = 1 << PRESTERA_LINK_MODE_10baseT_Full,
+		.duplex = PRESTERA_PORT_DUPLEX_FULL,
+		.port_type = PRESTERA_PORT_TYPE_TP,
 	},
-	[MVSW_LINK_MODE_100baseT_Half_BIT] = {
+	[PRESTERA_LINK_MODE_100baseT_Half] = {
 		.eth_mode =  ETHTOOL_LINK_MODE_100baseT_Half_BIT,
 		.speed = 100,
-		.pr_mask = 1 << MVSW_LINK_MODE_100baseT_Half_BIT,
-		.duplex = MVSW_PORT_DUPLEX_HALF,
-		.port_type = MVSW_PORT_TYPE_TP,
+		.pr_mask = 1 << PRESTERA_LINK_MODE_100baseT_Half,
+		.duplex = PRESTERA_PORT_DUPLEX_HALF,
+		.port_type = PRESTERA_PORT_TYPE_TP,
 	},
-	[MVSW_LINK_MODE_100baseT_Full_BIT] = {
+	[PRESTERA_LINK_MODE_100baseT_Full] = {
 		.eth_mode =  ETHTOOL_LINK_MODE_100baseT_Full_BIT,
 		.speed = 100,
-		.pr_mask = 1 << MVSW_LINK_MODE_100baseT_Full_BIT,
-		.duplex = MVSW_PORT_DUPLEX_FULL,
-		.port_type = MVSW_PORT_TYPE_TP,
+		.pr_mask = 1 << PRESTERA_LINK_MODE_100baseT_Full,
+		.duplex = PRESTERA_PORT_DUPLEX_FULL,
+		.port_type = PRESTERA_PORT_TYPE_TP,
 	},
-	[MVSW_LINK_MODE_1000baseT_Half_BIT] = {
+	[PRESTERA_LINK_MODE_1000baseT_Half] = {
 		.eth_mode =  ETHTOOL_LINK_MODE_1000baseT_Half_BIT,
 		.speed = 1000,
-		.pr_mask = 1 << MVSW_LINK_MODE_1000baseT_Half_BIT,
-		.duplex = MVSW_PORT_DUPLEX_HALF,
-		.port_type = MVSW_PORT_TYPE_TP,
+		.pr_mask = 1 << PRESTERA_LINK_MODE_1000baseT_Half,
+		.duplex = PRESTERA_PORT_DUPLEX_HALF,
+		.port_type = PRESTERA_PORT_TYPE_TP,
 	},
-	[MVSW_LINK_MODE_1000baseT_Full_BIT] = {
+	[PRESTERA_LINK_MODE_1000baseT_Full] = {
 		.eth_mode =  ETHTOOL_LINK_MODE_1000baseT_Full_BIT,
 		.speed = 1000,
-		.pr_mask = 1 << MVSW_LINK_MODE_1000baseT_Full_BIT,
-		.duplex = MVSW_PORT_DUPLEX_FULL,
-		.port_type = MVSW_PORT_TYPE_TP,
+		.pr_mask = 1 << PRESTERA_LINK_MODE_1000baseT_Full,
+		.duplex = PRESTERA_PORT_DUPLEX_FULL,
+		.port_type = PRESTERA_PORT_TYPE_TP,
 	},
-	[MVSW_LINK_MODE_1000baseX_Full_BIT] = {
+	[PRESTERA_LINK_MODE_1000baseX_Full] = {
 		.eth_mode = ETHTOOL_LINK_MODE_1000baseX_Full_BIT,
 		.speed = 1000,
-		.pr_mask = 1 << MVSW_LINK_MODE_1000baseX_Full_BIT,
-		.duplex = MVSW_PORT_DUPLEX_FULL,
-		.port_type = MVSW_PORT_TYPE_FIBRE,
+		.pr_mask = 1 << PRESTERA_LINK_MODE_1000baseX_Full,
+		.duplex = PRESTERA_PORT_DUPLEX_FULL,
+		.port_type = PRESTERA_PORT_TYPE_FIBRE,
 	},
-	[MVSW_LINK_MODE_1000baseKX_Full_BIT] = {
+	[PRESTERA_LINK_MODE_1000baseKX_Full] = {
 		.eth_mode = ETHTOOL_LINK_MODE_1000baseKX_Full_BIT,
 		.speed = 1000,
-		.pr_mask = 1 << MVSW_LINK_MODE_1000baseKX_Full_BIT,
-		.duplex = MVSW_PORT_DUPLEX_FULL,
-		.port_type = MVSW_PORT_TYPE_TP,
+		.pr_mask = 1 << PRESTERA_LINK_MODE_1000baseKX_Full,
+		.duplex = PRESTERA_PORT_DUPLEX_FULL,
+		.port_type = PRESTERA_PORT_TYPE_TP,
 	},
-	[MVSW_LINK_MODE_2500baseX_Full_BIT] = {
+	[PRESTERA_LINK_MODE_2500baseX_Full] = {
 		.eth_mode =  ETHTOOL_LINK_MODE_2500baseX_Full_BIT,
 		.speed = 2500,
-		.pr_mask = 1 << MVSW_LINK_MODE_2500baseX_Full_BIT,
-		.duplex = MVSW_PORT_DUPLEX_FULL,
+		.pr_mask = 1 << PRESTERA_LINK_MODE_2500baseX_Full,
+		.duplex = PRESTERA_PORT_DUPLEX_FULL,
 	},
-	[MVSW_LINK_MODE_10GbaseKR_Full_BIT] = {
+	[PRESTERA_LINK_MODE_10GbaseKR_Full] = {
 		.eth_mode = ETHTOOL_LINK_MODE_10000baseKR_Full_BIT,
 		.speed = 10000,
-		.pr_mask = 1 << MVSW_LINK_MODE_10GbaseKR_Full_BIT,
-		.duplex = MVSW_PORT_DUPLEX_FULL,
-		.port_type = MVSW_PORT_TYPE_TP,
+		.pr_mask = 1 << PRESTERA_LINK_MODE_10GbaseKR_Full,
+		.duplex = PRESTERA_PORT_DUPLEX_FULL,
+		.port_type = PRESTERA_PORT_TYPE_TP,
 	},
-	[MVSW_LINK_MODE_10GbaseSR_Full_BIT] = {
+	[PRESTERA_LINK_MODE_10GbaseSR_Full] = {
 		.eth_mode = ETHTOOL_LINK_MODE_10000baseSR_Full_BIT,
 		.speed = 10000,
-		.pr_mask = 1 << MVSW_LINK_MODE_10GbaseSR_Full_BIT,
-		.duplex = MVSW_PORT_DUPLEX_FULL,
-		.port_type = MVSW_PORT_TYPE_FIBRE,
+		.pr_mask = 1 << PRESTERA_LINK_MODE_10GbaseSR_Full,
+		.duplex = PRESTERA_PORT_DUPLEX_FULL,
+		.port_type = PRESTERA_PORT_TYPE_FIBRE,
 	},
-	[MVSW_LINK_MODE_10GbaseLR_Full_BIT] = {
+	[PRESTERA_LINK_MODE_10GbaseLR_Full] = {
 		.eth_mode = ETHTOOL_LINK_MODE_10000baseLR_Full_BIT,
 		.speed = 10000,
-		.pr_mask = 1 << MVSW_LINK_MODE_10GbaseLR_Full_BIT,
-		.duplex = MVSW_PORT_DUPLEX_FULL,
-		.port_type = MVSW_PORT_TYPE_FIBRE,
+		.pr_mask = 1 << PRESTERA_LINK_MODE_10GbaseLR_Full,
+		.duplex = PRESTERA_PORT_DUPLEX_FULL,
+		.port_type = PRESTERA_PORT_TYPE_FIBRE,
 	},
-	[MVSW_LINK_MODE_20GbaseKR2_Full_BIT] = {
+	[PRESTERA_LINK_MODE_20GbaseKR2_Full] = {
 		.eth_mode = ETHTOOL_LINK_MODE_20000baseKR2_Full_BIT,
 		.speed = 20000,
-		.pr_mask = 1 << MVSW_LINK_MODE_20GbaseKR2_Full_BIT,
-		.duplex = MVSW_PORT_DUPLEX_FULL,
-		.port_type = MVSW_PORT_TYPE_TP,
+		.pr_mask = 1 << PRESTERA_LINK_MODE_20GbaseKR2_Full,
+		.duplex = PRESTERA_PORT_DUPLEX_FULL,
+		.port_type = PRESTERA_PORT_TYPE_TP,
 	},
-	[MVSW_LINK_MODE_25GbaseCR_Full_BIT] = {
+	[PRESTERA_LINK_MODE_25GbaseCR_Full] = {
 		.eth_mode = ETHTOOL_LINK_MODE_25000baseCR_Full_BIT,
 		.speed = 25000,
-		.pr_mask = 1 << MVSW_LINK_MODE_25GbaseCR_Full_BIT,
-		.duplex = MVSW_PORT_DUPLEX_FULL,
-		.port_type = MVSW_PORT_TYPE_DA,
+		.pr_mask = 1 << PRESTERA_LINK_MODE_25GbaseCR_Full,
+		.duplex = PRESTERA_PORT_DUPLEX_FULL,
+		.port_type = PRESTERA_PORT_TYPE_DA,
 	},
-	[MVSW_LINK_MODE_25GbaseKR_Full_BIT] = {
+	[PRESTERA_LINK_MODE_25GbaseKR_Full] = {
 		.eth_mode = ETHTOOL_LINK_MODE_25000baseKR_Full_BIT,
 		.speed = 25000,
-		.pr_mask = 1 << MVSW_LINK_MODE_25GbaseKR_Full_BIT,
-		.duplex = MVSW_PORT_DUPLEX_FULL,
-		.port_type = MVSW_PORT_TYPE_TP,
+		.pr_mask = 1 << PRESTERA_LINK_MODE_25GbaseKR_Full,
+		.duplex = PRESTERA_PORT_DUPLEX_FULL,
+		.port_type = PRESTERA_PORT_TYPE_TP,
 	},
-	[MVSW_LINK_MODE_25GbaseSR_Full_BIT] = {
+	[PRESTERA_LINK_MODE_25GbaseSR_Full] = {
 		.eth_mode = ETHTOOL_LINK_MODE_25000baseSR_Full_BIT,
 		.speed = 25000,
-		.pr_mask = 1 << MVSW_LINK_MODE_25GbaseSR_Full_BIT,
-		.duplex = MVSW_PORT_DUPLEX_FULL,
-		.port_type = MVSW_PORT_TYPE_FIBRE,
+		.pr_mask = 1 << PRESTERA_LINK_MODE_25GbaseSR_Full,
+		.duplex = PRESTERA_PORT_DUPLEX_FULL,
+		.port_type = PRESTERA_PORT_TYPE_FIBRE,
 	},
-	[MVSW_LINK_MODE_40GbaseKR4_Full_BIT] = {
+	[PRESTERA_LINK_MODE_40GbaseKR4_Full] = {
 		.eth_mode = ETHTOOL_LINK_MODE_40000baseKR4_Full_BIT,
 		.speed = 40000,
-		.pr_mask = 1 << MVSW_LINK_MODE_40GbaseKR4_Full_BIT,
-		.duplex = MVSW_PORT_DUPLEX_FULL,
-		.port_type = MVSW_PORT_TYPE_TP,
+		.pr_mask = 1 << PRESTERA_LINK_MODE_40GbaseKR4_Full,
+		.duplex = PRESTERA_PORT_DUPLEX_FULL,
+		.port_type = PRESTERA_PORT_TYPE_TP,
 	},
-	[MVSW_LINK_MODE_40GbaseCR4_Full_BIT] = {
+	[PRESTERA_LINK_MODE_40GbaseCR4_Full] = {
 		.eth_mode = ETHTOOL_LINK_MODE_40000baseCR4_Full_BIT,
 		.speed = 40000,
-		.pr_mask = 1 << MVSW_LINK_MODE_40GbaseCR4_Full_BIT,
-		.duplex = MVSW_PORT_DUPLEX_FULL,
-		.port_type = MVSW_PORT_TYPE_DA,
+		.pr_mask = 1 << PRESTERA_LINK_MODE_40GbaseCR4_Full,
+		.duplex = PRESTERA_PORT_DUPLEX_FULL,
+		.port_type = PRESTERA_PORT_TYPE_DA,
 	},
-	[MVSW_LINK_MODE_40GbaseSR4_Full_BIT] = {
+	[PRESTERA_LINK_MODE_40GbaseSR4_Full] = {
 		.eth_mode = ETHTOOL_LINK_MODE_40000baseSR4_Full_BIT,
 		.speed = 40000,
-		.pr_mask = 1 << MVSW_LINK_MODE_40GbaseSR4_Full_BIT,
-		.duplex = MVSW_PORT_DUPLEX_FULL,
-		.port_type = MVSW_PORT_TYPE_FIBRE,
+		.pr_mask = 1 << PRESTERA_LINK_MODE_40GbaseSR4_Full,
+		.duplex = PRESTERA_PORT_DUPLEX_FULL,
+		.port_type = PRESTERA_PORT_TYPE_FIBRE,
 	},
-	[MVSW_LINK_MODE_50GbaseCR2_Full_BIT] = {
+	[PRESTERA_LINK_MODE_50GbaseCR2_Full] = {
 		.eth_mode = ETHTOOL_LINK_MODE_50000baseCR2_Full_BIT,
 		.speed = 50000,
-		.pr_mask = 1 << MVSW_LINK_MODE_50GbaseCR2_Full_BIT,
-		.duplex = MVSW_PORT_DUPLEX_FULL,
-		.port_type = MVSW_PORT_TYPE_DA,
+		.pr_mask = 1 << PRESTERA_LINK_MODE_50GbaseCR2_Full,
+		.duplex = PRESTERA_PORT_DUPLEX_FULL,
+		.port_type = PRESTERA_PORT_TYPE_DA,
 	},
-	[MVSW_LINK_MODE_50GbaseKR2_Full_BIT] = {
+	[PRESTERA_LINK_MODE_50GbaseKR2_Full] = {
 		.eth_mode = ETHTOOL_LINK_MODE_50000baseKR2_Full_BIT,
 		.speed = 50000,
-		.pr_mask = 1 << MVSW_LINK_MODE_50GbaseKR2_Full_BIT,
-		.duplex = MVSW_PORT_DUPLEX_FULL,
-		.port_type = MVSW_PORT_TYPE_TP,
+		.pr_mask = 1 << PRESTERA_LINK_MODE_50GbaseKR2_Full,
+		.duplex = PRESTERA_PORT_DUPLEX_FULL,
+		.port_type = PRESTERA_PORT_TYPE_TP,
 	},
-	[MVSW_LINK_MODE_50GbaseSR2_Full_BIT] = {
+	[PRESTERA_LINK_MODE_50GbaseSR2_Full] = {
 		.eth_mode = ETHTOOL_LINK_MODE_50000baseSR2_Full_BIT,
 		.speed = 50000,
-		.pr_mask = 1 << MVSW_LINK_MODE_50GbaseSR2_Full_BIT,
-		.duplex = MVSW_PORT_DUPLEX_FULL,
-		.port_type = MVSW_PORT_TYPE_FIBRE,
+		.pr_mask = 1 << PRESTERA_LINK_MODE_50GbaseSR2_Full,
+		.duplex = PRESTERA_PORT_DUPLEX_FULL,
+		.port_type = PRESTERA_PORT_TYPE_FIBRE,
 	},
-	[MVSW_LINK_MODE_100GbaseKR4_Full_BIT] = {
+	[PRESTERA_LINK_MODE_100GbaseKR4_Full] = {
 		.eth_mode = ETHTOOL_LINK_MODE_100000baseKR4_Full_BIT,
 		.speed = 100000,
-		.pr_mask = 1 << MVSW_LINK_MODE_100GbaseKR4_Full_BIT,
-		.duplex = MVSW_PORT_DUPLEX_FULL,
-		.port_type = MVSW_PORT_TYPE_TP,
+		.pr_mask = 1 << PRESTERA_LINK_MODE_100GbaseKR4_Full,
+		.duplex = PRESTERA_PORT_DUPLEX_FULL,
+		.port_type = PRESTERA_PORT_TYPE_TP,
 	},
-	[MVSW_LINK_MODE_100GbaseSR4_Full_BIT] = {
+	[PRESTERA_LINK_MODE_100GbaseSR4_Full] = {
 		.eth_mode = ETHTOOL_LINK_MODE_100000baseSR4_Full_BIT,
 		.speed = 100000,
-		.pr_mask = 1 << MVSW_LINK_MODE_100GbaseSR4_Full_BIT,
-		.duplex = MVSW_PORT_DUPLEX_FULL,
-		.port_type = MVSW_PORT_TYPE_FIBRE,
+		.pr_mask = 1 << PRESTERA_LINK_MODE_100GbaseSR4_Full,
+		.duplex = PRESTERA_PORT_DUPLEX_FULL,
+		.port_type = PRESTERA_PORT_TYPE_FIBRE,
 	},
-	[MVSW_LINK_MODE_100GbaseCR4_Full_BIT] = {
+	[PRESTERA_LINK_MODE_100GbaseCR4_Full] = {
 		.eth_mode = ETHTOOL_LINK_MODE_100000baseCR4_Full_BIT,
 		.speed = 100000,
-		.pr_mask = 1 << MVSW_LINK_MODE_100GbaseCR4_Full_BIT,
-		.duplex = MVSW_PORT_DUPLEX_FULL,
-		.port_type = MVSW_PORT_TYPE_DA,
+		.pr_mask = 1 << PRESTERA_LINK_MODE_100GbaseCR4_Full,
+		.duplex = PRESTERA_PORT_DUPLEX_FULL,
+		.port_type = PRESTERA_PORT_TYPE_DA,
 	}
 };
 
@@ -209,21 +209,21 @@ struct prestera_fec {
 	u8 pr_fec;
 };
 
-static const struct prestera_fec prestera_fec_caps[MVSW_PORT_FEC_MAX] = {
-	[MVSW_PORT_FEC_OFF_BIT] = {
+static const struct prestera_fec prestera_fec_caps[PRESTERA_PORT_FEC_MAX] = {
+	[PRESTERA_PORT_FEC_OFF] = {
 		.eth_fec = ETHTOOL_FEC_OFF,
 		.eth_mode = ETHTOOL_LINK_MODE_FEC_NONE_BIT,
-		.pr_fec = 1 << MVSW_PORT_FEC_OFF_BIT,
+		.pr_fec = 1 << PRESTERA_PORT_FEC_OFF,
 	},
-	[MVSW_PORT_FEC_BASER_BIT] = {
+	[PRESTERA_PORT_FEC_BASER] = {
 		.eth_fec = ETHTOOL_FEC_BASER,
 		.eth_mode = ETHTOOL_LINK_MODE_FEC_BASER_BIT,
-		.pr_fec = 1 << MVSW_PORT_FEC_BASER_BIT,
+		.pr_fec = 1 << PRESTERA_PORT_FEC_BASER,
 	},
-	[MVSW_PORT_FEC_RS_BIT] = {
+	[PRESTERA_PORT_FEC_RS] = {
 		.eth_fec = ETHTOOL_FEC_RS,
 		.eth_mode = ETHTOOL_LINK_MODE_FEC_RS_BIT,
-		.pr_fec = 1 << MVSW_PORT_FEC_RS_BIT,
+		.pr_fec = 1 << PRESTERA_PORT_FEC_RS,
 	}
 };
 
@@ -233,36 +233,36 @@ struct prestera_port_type {
 };
 
 static const struct prestera_port_type
-prestera_port_types[MVSW_PORT_TYPE_MAX] = {
-	[MVSW_PORT_TYPE_NONE] = {
+prestera_port_types[PRESTERA_PORT_TYPE_MAX] = {
+	[PRESTERA_PORT_TYPE_NONE] = {
 		.eth_mode = __ETHTOOL_LINK_MODE_MASK_NBITS,
 		.eth_type = PORT_NONE,
 	},
-	[MVSW_PORT_TYPE_TP] = {
+	[PRESTERA_PORT_TYPE_TP] = {
 		.eth_mode = ETHTOOL_LINK_MODE_TP_BIT,
 		.eth_type = PORT_TP,
 	},
-	[MVSW_PORT_TYPE_AUI] = {
+	[PRESTERA_PORT_TYPE_AUI] = {
 		.eth_mode = ETHTOOL_LINK_MODE_AUI_BIT,
 		.eth_type = PORT_AUI,
 	},
-	[MVSW_PORT_TYPE_MII] = {
+	[PRESTERA_PORT_TYPE_MII] = {
 		.eth_mode = ETHTOOL_LINK_MODE_MII_BIT,
 		.eth_type = PORT_MII,
 	},
-	[MVSW_PORT_TYPE_FIBRE] = {
+	[PRESTERA_PORT_TYPE_FIBRE] = {
 		.eth_mode = ETHTOOL_LINK_MODE_FIBRE_BIT,
 		.eth_type = PORT_FIBRE,
 	},
-	[MVSW_PORT_TYPE_BNC] = {
+	[PRESTERA_PORT_TYPE_BNC] = {
 		.eth_mode = ETHTOOL_LINK_MODE_BNC_BIT,
 		.eth_type = PORT_BNC,
 	},
-	[MVSW_PORT_TYPE_DA] = {
+	[PRESTERA_PORT_TYPE_DA] = {
 		.eth_mode = ETHTOOL_LINK_MODE_TP_BIT,
 		.eth_type = PORT_TP,
 	},
-	[MVSW_PORT_TYPE_OTHER] = {
+	[PRESTERA_PORT_TYPE_OTHER] = {
 		.eth_mode = __ETHTOOL_LINK_MODE_MASK_NBITS,
 		.eth_type = PORT_OTHER,
 	}
@@ -306,16 +306,16 @@ static void prestera_modes_to_eth(unsigned long *eth_modes, u64 link_modes,
 {
 	u32 mode;
 
-	for (mode = 0; mode < MVSW_LINK_MODE_MAX; mode++) {
+	for (mode = 0; mode < PRESTERA_LINK_MODE_MAX; mode++) {
 		if ((prestera_link_modes[mode].pr_mask & link_modes) == 0)
 			continue;
-		if (type != MVSW_PORT_TYPE_NONE &&
+		if (type != PRESTERA_PORT_TYPE_NONE &&
 		    prestera_link_modes[mode].port_type != type)
 			continue;
 		__set_bit(prestera_link_modes[mode].eth_mode, eth_modes);
 	}
 
-	for (mode = 0; mode < MVSW_PORT_FEC_MAX; mode++) {
+	for (mode = 0; mode < PRESTERA_PORT_FEC_MAX; mode++) {
 		if ((prestera_fec_caps[mode].pr_fec & fec) == 0)
 			continue;
 		__set_bit(prestera_fec_caps[mode].eth_mode, eth_modes);
@@ -324,18 +324,11 @@ static void prestera_modes_to_eth(unsigned long *eth_modes, u64 link_modes,
 
 static void prestera_port_remote_cap_cache(struct prestera_port *port)
 {
-	struct prestera_port_link_params *params = &port->link_params;
+	struct prestera_port_phy_state *state = &port->state_phy;
 
-	if (!params->oper_state)
-		return;
-
-	if (params->lmode_bmap &&
-	    (params->remote_fc.pause || params->remote_fc.asym_pause))
-		return;
-
-	if (mvsw_pr_hw_port_remote_cap_get(port, &params->lmode_bmap,
-					   &params->remote_fc.pause,
-					   &params->remote_fc.asym_pause))
+	if (prestera_hw_port_phy_mode_get(port, NULL, &state->lmode_bmap,
+					  &state->remote_fc.pause,
+					  &state->remote_fc.asym_pause))
 		netdev_warn(port->net_dev,
 			    "Remote link caps get failed %d",
 			    port->caps.transceiver);
@@ -343,43 +336,36 @@ static void prestera_port_remote_cap_cache(struct prestera_port *port)
 
 static void prestera_port_mdix_cache(struct prestera_port *port)
 {
-	struct prestera_port_link_params *params = &port->link_params;
+	struct prestera_port_phy_state *state = &port->state_phy;
 
-	if (!params->oper_state)
-		return;
-
-	if (params->mdix.status == ETH_TP_MDI_INVALID ||
-	    params->mdix.admin_mode == ETH_TP_MDI_INVALID) {
-		if (mvsw_pr_hw_port_mdix_get(port, &params->mdix.status,
-					     &params->mdix.admin_mode)) {
-			netdev_warn(port->net_dev, "MDIX params get failed");
-			params->mdix.status = ETH_TP_MDI_INVALID;
-			params->mdix.admin_mode = ETH_TP_MDI_INVALID;
-		}
+	if (prestera_hw_port_phy_mode_get(port, &state->mdix,
+					  NULL, NULL, NULL)) {
+		netdev_warn(port->net_dev, "MDIX params get failed");
+		state->mdix = ETH_TP_MDI_INVALID;
 	}
 }
 
 static void prestera_port_link_mode_cache(struct prestera_port *port)
 {
-	struct prestera_port_link_params *params = &port->link_params;
+	struct prestera_port_mac_state *state = &port->state_mac;
 	u32 speed;
 	u8 duplex;
 	int err;
 
-	if (!params->oper_state)
+	if (!port->state_mac.oper)
 		return;
 
-	if (params->speed == SPEED_UNKNOWN ||
-	    params->duplex == DUPLEX_UNKNOWN) {
+	if (state->speed == SPEED_UNKNOWN ||
+	    state->duplex == DUPLEX_UNKNOWN) {
 
-		err = mvsw_pr_hw_port_mac_mode_get(port, NULL, &speed,
-						   &duplex, NULL);
+		err = prestera_hw_port_mac_mode_get(port, NULL, &speed,
+						    &duplex, NULL);
 		if (err) {
-			params->speed = SPEED_UNKNOWN;
-			params->duplex = DUPLEX_UNKNOWN;
+			state->speed = SPEED_UNKNOWN;
+			state->duplex = DUPLEX_UNKNOWN;
 		} else {
-			params->speed = speed;
-			params->duplex = duplex == MVSW_PORT_DUPLEX_FULL ?
+			state->speed = speed;
+			state->duplex = duplex == PRESTERA_PORT_DUPLEX_FULL ?
 					  DUPLEX_FULL : DUPLEX_HALF;
 		}
 	}
@@ -390,24 +376,24 @@ static void prestera_port_mdix_get(struct ethtool_link_ksettings *ecmd,
 {
 	prestera_port_mdix_cache(port);
 
-	ecmd->base.eth_tp_mdix = port->link_params.mdix.status;
-	ecmd->base.eth_tp_mdix_ctrl = port->link_params.mdix.admin_mode;
+	ecmd->base.eth_tp_mdix = port->state_phy.mdix;
+	ecmd->base.eth_tp_mdix_ctrl = port->cfg_phy.mdix;
 }
 
 static void prestera_port_remote_cap_get(struct ethtool_link_ksettings *ecmd,
 					 struct prestera_port *port)
 {
-	struct prestera_port_link_params *params = &port->link_params;
+	struct prestera_port_phy_state *state = &port->state_phy;
 	bool asym_pause;
 	bool pause;
 	u64 bitmap;
 
 	prestera_port_remote_cap_cache(port);
 
-	bitmap = params->lmode_bmap;
+	bitmap = state->lmode_bmap;
 
 	prestera_modes_to_eth(ecmd->link_modes.lp_advertising,
-			      bitmap, 0, MVSW_PORT_TYPE_NONE);
+			      bitmap, 0, PRESTERA_PORT_TYPE_NONE);
 
 	if (!bitmap_empty(ecmd->link_modes.lp_advertising,
 			  __ETHTOOL_LINK_MODE_MASK_NBITS)) {
@@ -416,8 +402,8 @@ static void prestera_port_remote_cap_get(struct ethtool_link_ksettings *ecmd,
 						     Autoneg);
 	}
 
-	pause = params->remote_fc.pause;
-	asym_pause = params->remote_fc.asym_pause;
+	pause = state->remote_fc.pause;
+	asym_pause = state->remote_fc.asym_pause;
 
 	if (pause)
 		ethtool_link_ksettings_add_link_mode(ecmd,
@@ -435,10 +421,10 @@ static void prestera_port_remote_cap_get(struct ethtool_link_ksettings *ecmd,
 int prestera_port_link_mode_set(struct prestera_port *port,
 				u32 speed, u8 duplex, u8 type)
 {
-	u32 new_mode = MVSW_LINK_MODE_MAX;
+	u32 new_mode = PRESTERA_LINK_MODE_MAX;
 	u32 mode;
 
-	for (mode = 0; mode < MVSW_LINK_MODE_MAX; mode++) {
+	for (mode = 0; mode < PRESTERA_LINK_MODE_MAX; mode++) {
 		if (speed != SPEED_UNKNOWN &&
 		    speed != prestera_link_modes[mode].speed)
 			continue;
@@ -455,20 +441,21 @@ int prestera_port_link_mode_set(struct prestera_port *port,
 		/* Find highest compatible mode */
 	}
 
-	if (new_mode == MVSW_LINK_MODE_MAX) {
+	if (new_mode == PRESTERA_LINK_MODE_MAX) {
 		netdev_err(port->net_dev, "Unsupported speed/duplex requested");
 		return -EINVAL;
 	}
 
-	if (mvsw_pr_hw_port_phy_mode_set(port, port->cfg_phy.admin,
-					 false, new_mode, 0))
+	if (prestera_hw_port_phy_mode_set(port, port->cfg_phy.admin,
+					  false, new_mode, 0,
+					  port->cfg_phy.mdix))
 		return -EINVAL;
 
 	/* TODO: move all this parameters to cfg_phy */
 	port->autoneg = false;
 	port->cfg_phy.mode = new_mode;
 	port->adver_link_modes = 0;
-	port->adver_fec = BIT(MVSW_PORT_FEC_OFF_BIT);
+	port->adver_fec = BIT(PRESTERA_PORT_FEC_OFF);
 
 	return 0;
 }
@@ -483,7 +470,7 @@ static void prestera_port_autoneg_get(struct ethtool_link_ksettings *ecmd,
 			      port->caps.supp_fec,
 			      port->caps.type);
 
-	if (port->caps.type != MVSW_PORT_TYPE_TP)
+	if (port->caps.type != PRESTERA_PORT_TYPE_TP)
 		return;
 
 	ethtool_link_ksettings_add_link_mode(ecmd, supported, Autoneg);
@@ -498,7 +485,7 @@ static void prestera_port_autoneg_get(struct ethtool_link_ksettings *ecmd,
 				      port->caps.type);
 		ethtool_link_ksettings_add_link_mode(ecmd, advertising,
 						     Autoneg);
-	} else if (port->caps.transceiver == MVSW_PORT_TRANSCEIVER_COPPER)
+	} else if (port->caps.transceiver == PRESTERA_PORT_TCVR_COPPER)
 		ethtool_link_ksettings_add_link_mode(ecmd, advertising,
 						     Autoneg);
 }
@@ -529,7 +516,7 @@ static int prestera_modes_from_eth(struct prestera_port *port,
 
 	*link_modes  = 0;
 	*fec = 0;
-	for (mode = 0; mode < MVSW_LINK_MODE_MAX; mode++) {
+	for (mode = 0; mode < PRESTERA_LINK_MODE_MAX; mode++) {
 		if (!test_bit(prestera_link_modes[mode].eth_mode, advertising))
 			continue;
 		if (prestera_link_modes[mode].port_type != port->caps.type)
@@ -537,7 +524,7 @@ static int prestera_modes_from_eth(struct prestera_port *port,
 		*link_modes |= prestera_link_modes[mode].pr_mask;
 	}
 
-	for (mode = 0; mode < MVSW_PORT_FEC_MAX; mode++) {
+	for (mode = 0; mode < PRESTERA_PORT_FEC_MAX; mode++) {
 		if (!test_bit(prestera_fec_caps[mode].eth_mode, advertising))
 			continue;
 		*fec |= prestera_fec_caps[mode].pr_fec;
@@ -551,7 +538,7 @@ static int prestera_modes_from_eth(struct prestera_port *port,
 		*link_modes = port->adver_link_modes;
 	if (*fec == 0)
 		*fec = port->adver_fec ? port->adver_fec :
-					 BIT(MVSW_PORT_FEC_OFF_BIT);
+					 BIT(PRESTERA_PORT_FEC_OFF);
 
 	return 0;
 }
@@ -562,7 +549,7 @@ static void prestera_port_supp_types_get(struct ethtool_link_ksettings *ecmd,
 	u32 mode;
 	u8 ptype;
 
-	for (mode = 0; mode < MVSW_LINK_MODE_MAX; mode++) {
+	for (mode = 0; mode < PRESTERA_LINK_MODE_MAX; mode++) {
 		if ((prestera_link_modes[mode].pr_mask &
 		    port->caps.supp_link_modes) == 0)
 			continue;
@@ -577,8 +564,8 @@ static void prestera_port_link_mode_get(struct ethtool_link_ksettings *ecmd,
 {
 	prestera_port_link_mode_cache(port);
 
-	ecmd->base.speed = port->link_params.speed;
-	ecmd->base.duplex = port->link_params.duplex;
+	ecmd->base.speed = port->state_mac.speed;
+	ecmd->base.duplex = port->state_mac.duplex;
 }
 
 static void prestera_port_get_drvinfo(struct net_device *dev,
@@ -600,7 +587,7 @@ static void prestera_port_get_drvinfo(struct net_device *dev,
 static void prestera_port_type_get(struct ethtool_link_ksettings *ecmd,
 				   struct prestera_port *port)
 {
-	if (port->caps.type < MVSW_PORT_TYPE_MAX)
+	if (port->caps.type < PRESTERA_PORT_TYPE_MAX)
 		ecmd->base.port = prestera_port_types[port->caps.type].eth_type;
 	else
 		ecmd->base.port = PORT_OTHER;
@@ -611,9 +598,9 @@ static int prestera_port_type_set(const struct ethtool_link_ksettings *ecmd,
 {
 	int err;
 	u32 type, mode;
-	u32 new_mode = MVSW_LINK_MODE_MAX;
+	u32 new_mode = PRESTERA_LINK_MODE_MAX;
 
-	for (type = 0; type < MVSW_PORT_TYPE_MAX; type++) {
+	for (type = 0; type < PRESTERA_PORT_TYPE_MAX; type++) {
 		if (prestera_port_types[type].eth_type == ecmd->base.port &&
 		    test_bit(prestera_port_types[type].eth_mode,
 			     ecmd->link_modes.supported)) {
@@ -627,12 +614,12 @@ static int prestera_port_type_set(const struct ethtool_link_ksettings *ecmd,
 	if (type != port->caps.type && ecmd->base.autoneg == AUTONEG_ENABLE)
 		return -EINVAL;
 
-	if (type == MVSW_PORT_TYPE_MAX) {
+	if (type == PRESTERA_PORT_TYPE_MAX) {
 		pr_err("Unsupported port type requested\n");
 		return -EINVAL;
 	}
 
-	for (mode = 0; mode < MVSW_LINK_MODE_MAX; mode++) {
+	for (mode = 0; mode < PRESTERA_LINK_MODE_MAX; mode++) {
 		if ((prestera_link_modes[mode].pr_mask &
 		    port->caps.supp_link_modes) &&
 		    type == prestera_link_modes[mode].port_type) {
@@ -640,7 +627,7 @@ static int prestera_port_type_set(const struct ethtool_link_ksettings *ecmd,
 		}
 	}
 
-	if (new_mode < MVSW_LINK_MODE_MAX)
+	if (new_mode < PRESTERA_LINK_MODE_MAX)
 	{
 		/* err = mvsw_pr_hw_port_link_mode_set(port, new_mode); */
 		pr_err("Unexpected call of type set on integral phy");
@@ -659,10 +646,15 @@ static int prestera_port_mdix_set(const struct ethtool_link_ksettings *ecmd,
 				  struct prestera_port *port)
 {
 	if (ecmd->base.eth_tp_mdix_ctrl != ETH_TP_MDI_INVALID &&
-	    port->caps.transceiver == MVSW_PORT_TRANSCEIVER_COPPER &&
-	    port->caps.type == MVSW_PORT_TYPE_TP)
-		return mvsw_pr_hw_port_mdix_set(port,
-						ecmd->base.eth_tp_mdix_ctrl);
+	    port->caps.transceiver == PRESTERA_PORT_TCVR_COPPER &&
+	    port->caps.type == PRESTERA_PORT_TYPE_TP) {
+		port->cfg_phy.mdix = ecmd->base.eth_tp_mdix_ctrl;
+		return prestera_hw_port_phy_mode_set(port, port->cfg_phy.admin,
+						     port->autoneg,
+						     port->cfg_phy.mode,
+						     port->adver_link_modes,
+						     port->cfg_phy.mdix);
+	}
 	return 0;
 }
 
@@ -691,7 +683,7 @@ static int prestera_port_get_link_ksettings(struct net_device *dev,
 	prestera_port_autoneg_get(ecmd, port);
 
 	if (port->autoneg && netif_carrier_ok(dev) &&
-	    port->caps.transceiver == MVSW_PORT_TRANSCEIVER_COPPER)
+	    port->caps.transceiver == PRESTERA_PORT_TCVR_COPPER)
 		prestera_port_remote_cap_get(ecmd, port);
 
 	if (netif_carrier_ok(dev))
@@ -699,8 +691,8 @@ static int prestera_port_get_link_ksettings(struct net_device *dev,
 
 	prestera_port_type_get(ecmd, port);
 
-	if (port->caps.type == MVSW_PORT_TYPE_TP &&
-	    port->caps.transceiver == MVSW_PORT_TRANSCEIVER_COPPER)
+	if (port->caps.type == PRESTERA_PORT_TYPE_TP &&
+	    port->caps.transceiver == PRESTERA_PORT_TCVR_COPPER)
 		prestera_port_mdix_get(ecmd, port);
 
 	return 0;
@@ -724,7 +716,7 @@ static int prestera_port_set_link_ksettings(struct net_device *dev,
 	if (err)
 		return err;
 
-	if (port->caps.transceiver == MVSW_PORT_TRANSCEIVER_COPPER) {
+	if (port->caps.transceiver == PRESTERA_PORT_TCVR_COPPER) {
 		err = prestera_port_mdix_set(ecmd, port);
 		if (err)
 			return err;
@@ -749,8 +741,8 @@ static int prestera_port_set_link_ksettings(struct net_device *dev,
 						  DUPLEX_UNKNOWN :
 						  (ecmd->base.duplex ==
 						   DUPLEX_HALF ?
-						   MVSW_PORT_DUPLEX_HALF :
-						   MVSW_PORT_DUPLEX_FULL),
+						   PRESTERA_PORT_DUPLEX_HALF :
+						   PRESTERA_PORT_DUPLEX_FULL),
 						  port->caps.type);
 	else
 		err = prestera_port_autoneg_set(port, adver_modes);
@@ -766,9 +758,9 @@ static int prestera_port_nway_reset(struct net_device *dev)
 	struct prestera_port *port = netdev_priv(dev);
 
 	if (netif_running(dev) &&
-	    port->caps.transceiver == MVSW_PORT_TRANSCEIVER_COPPER &&
-	    port->caps.type == MVSW_PORT_TYPE_TP)
-		return mvsw_pr_hw_port_autoneg_restart(port);
+	    port->caps.transceiver == PRESTERA_PORT_TCVR_COPPER &&
+	    port->caps.type == PRESTERA_PORT_TYPE_TP)
+		return prestera_hw_port_autoneg_restart(port);
 
 	return -EINVAL;
 }
@@ -781,18 +773,18 @@ static int prestera_port_get_fecparam(struct net_device *dev,
 	u8 active;
 	int err;
 
-	err = mvsw_pr_hw_port_mac_mode_get(port, NULL, NULL, NULL, &active);
+	err = prestera_hw_port_mac_mode_get(port, NULL, NULL, NULL, &active);
 	if (err)
 		return err;
 
 	fecparam->fec = 0;
-	for (mode = 0; mode < MVSW_PORT_FEC_MAX; mode++) {
+	for (mode = 0; mode < PRESTERA_PORT_FEC_MAX; mode++) {
 		if ((prestera_fec_caps[mode].pr_fec & port->caps.supp_fec) == 0)
 			continue;
 		fecparam->fec |= prestera_fec_caps[mode].eth_fec;
 	}
 
-	if (active < MVSW_PORT_FEC_MAX)
+	if (active < PRESTERA_PORT_FEC_MAX)
 		fecparam->active_fec = prestera_fec_caps[active].eth_fec;
 	else
 		fecparam->active_fec = ETHTOOL_FEC_AUTO;
@@ -813,13 +805,13 @@ static int prestera_port_set_fecparam(struct net_device *dev,
 		return -EINVAL;
 	}
 
-	if (port->caps.transceiver == MVSW_PORT_TRANSCEIVER_SFP) {
+	if (port->caps.transceiver == PRESTERA_PORT_TCVR_SFP) {
 		netdev_err(dev, "FEC set is not allowed on non-SFP ports\n");
 		return -EINVAL;
 	}
 
-	fec = MVSW_PORT_FEC_MAX;
-	for (mode = 0; mode < MVSW_PORT_FEC_MAX; mode++) {
+	fec = PRESTERA_PORT_FEC_MAX;
+	for (mode = 0; mode < PRESTERA_PORT_FEC_MAX; mode++) {
 		if ((prestera_fec_caps[mode].eth_fec & fecparam->fec) &&
 		    (prestera_fec_caps[mode].pr_fec & port->caps.supp_fec)) {
 			fec = mode;
@@ -832,7 +824,7 @@ static int prestera_port_set_fecparam(struct net_device *dev,
 	if (fec == cfg_mac.fec)
 		return 0;
 
-	if (fec == MVSW_PORT_FEC_MAX) {
+	if (fec == PRESTERA_PORT_FEC_MAX) {
 		netdev_err(dev, "Unsupported FEC requested");
 		return -EINVAL;
 	}
@@ -874,35 +866,22 @@ static void prestera_port_get_strings(struct net_device *dev,
 void prestera_ethtool_port_state_changed(struct prestera_port *port,
 					 struct prestera_port_event *evt)
 {
-	struct prestera_port_link_params *params = &port->link_params;
+	struct prestera_port_mac_state *smac = &port->state_mac;
 
-	params->oper_state = evt->data.oper_state;
+	smac->oper = evt->data.mac.oper;
 
-	if (params->oper_state) {
-		if (port->autoneg &&
-		    port->caps.transceiver == MVSW_PORT_TRANSCEIVER_COPPER) {
-			params->lmode_bmap = evt->data.lmode_bmap;
-			params->remote_fc.pause = evt->data.pause;
-			params->remote_fc.asym_pause = evt->data.asym_pause;
-		}
-
-		/* TODO: must be different modes senses for MAC/PHY link */
-		params->speed = prestera_link_modes[evt->data.link_mode].speed;
-		params->duplex = prestera_link_modes[evt->data.link_mode].duplex;
-
-		if (port->caps.transceiver == MVSW_PORT_TRANSCEIVER_COPPER &&
-		    port->caps.type == MVSW_PORT_TYPE_TP) {
-			params->mdix.status = evt->data.status;
-			params->mdix.admin_mode = evt->data.admin_mode;
-		}
+	if (smac->oper) {
+		smac->mode = evt->data.mac.mode;
+		smac->speed = evt->data.mac.speed;
+		smac->duplex = evt->data.mac.duplex;
+		smac->fc = evt->data.mac.fc;
+		smac->fec = evt->data.mac.fec;
 	} else {
-		params->remote_fc.pause = false;
-		params->remote_fc.asym_pause = false;
-		params->lmode_bmap = 0;
-		params->speed = SPEED_UNKNOWN;
-		params->duplex = DUPLEX_UNKNOWN;
-		params->mdix.status = ETH_TP_MDI_INVALID;
-		params->mdix.admin_mode = ETH_TP_MDI_INVALID;
+		smac->mode = PRESTERA_MAC_MODE_MAX;
+		smac->speed = SPEED_UNKNOWN;
+		smac->duplex = DUPLEX_UNKNOWN;
+		smac->fc = 0;
+		smac->fec = 0;
 	}
 }
 

@@ -220,7 +220,7 @@ static int net_if_dsa_tag_from_cpu_build(const struct mvsw_pr_dsa *dsa_info_ptr,
 	const struct mvsw_pr_dsa_from_cpu *from_cpu_ptr =
 	    &dsa_info_ptr->dsa_info.from_cpu;
 
-	if (unlikely(from_cpu_ptr->dst_iface.type != MVSW_IF_PORT_E))
+	if (unlikely(from_cpu_ptr->dst_iface.type != PRESTERA_IF_PORT_E))
 		/* only sending to port interface is supported */
 		return -EINVAL;
 

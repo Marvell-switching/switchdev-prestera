@@ -69,26 +69,26 @@ static ssize_t storm_control_attr_store(struct device *dev,
 
 	if (!strcmp(attr->attr.name, "broadcast_kbyte_per_sec_rate")) {
 		attr_to_change = &sc_attr->bc_kbyte_per_sec_rate;
-		storm_type = MVSW_PORT_STORM_CTL_TYPE_BC;
+		storm_type = PRESTERA_PORT_STORM_CTL_TYPE_BC;
 	}
 
 	if (!strcmp(attr->attr.name, "unknown_unicast_kbyte_per_sec_rate")) {
 		attr_to_change = &sc_attr->unknown_uc_kbyte_per_sec_rate;
-		storm_type = MVSW_PORT_STORM_CTL_TYPE_UC_UNK;
+		storm_type = PRESTERA_PORT_STORM_CTL_TYPE_UC_UNK;
 	}
 
 	if (!strcmp(attr->attr.name,
 		    "unregistered_multicast_kbyte_per_sec_rate")) {
 		attr_to_change = &sc_attr->unreg_mc_kbyte_per_sec_rate;
-		storm_type = MVSW_PORT_STORM_CTL_TYPE_MC;
+		storm_type = PRESTERA_PORT_STORM_CTL_TYPE_MC;
 	}
 
 	if (!attr_to_change)
 		return -EINVAL;
 
 	if (kbyte_per_sec_rate != *attr_to_change)
-		ret = mvsw_pr_hw_port_storm_control_cfg_set(port, storm_type,
-							    kbyte_per_sec_rate);
+		ret = prestera_hw_port_storm_control_cfg_set(port, storm_type,
+							     kbyte_per_sec_rate);
 	else
 		return size;
 

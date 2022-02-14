@@ -46,7 +46,6 @@ enum {
 	DEVLINK_PRESTERA_TRAP_ID_ILLEGAL_IP_ADDR,
 	DEVLINK_PRESTERA_TRAP_ID_INVALID_SA,
 	DEVLINK_PRESTERA_TRAP_ID_LOCAL_PORT,
-	DEVLINK_PRESTERA_TRAP_ID_PORT_NO_VLAN,
 	DEVLINK_PRESTERA_TRAP_ID_RXDMA_DROP,
 };
 
@@ -100,8 +99,6 @@ enum {
 	"icmp"
 #define DEVLINK_PRESTERA_TRAP_NAME_RXDMA_DROP \
 	"rxdma_drop"
-#define DEVLINK_PRESTERA_TRAP_NAME_PORT_NO_VLAN \
-	"port_no_vlan"
 #define DEVLINK_PRESTERA_TRAP_NAME_LOCAL_PORT \
 	"local_port"
 #define DEVLINK_PRESTERA_TRAP_NAME_INVALID_SA \
@@ -345,10 +342,6 @@ static struct prestera_trap prestera_trap_items_arr[] = {
 		.cpu_code = 37,
 	},
 	{
-		.trap = PRESTERA_TRAP_DRIVER_DROP(PORT_NO_VLAN, L2_DROPS),
-		.cpu_code = 39,
-	},
-	{
 		.trap = PRESTERA_TRAP_DRIVER_DROP(LOCAL_PORT, L2_DROPS),
 		.cpu_code = 56,
 	},
@@ -375,7 +368,7 @@ static struct prestera_trap prestera_trap_items_arr[] = {
 	},
 	{
 		.trap = PRESTERA_TRAP_DRIVER_DROP(MET_RED, BUFFER_DROPS),
-		.cpu_code = 185,
+		.cpu_code = 186,
 	},
 };
 #endif
@@ -433,23 +426,23 @@ static int prestera_storm_control_rate_set(struct devlink *dl, u32 id,
 	switch (type_id) {
 	case PORT_PARAM_ID_BC_RATE:
 		param_to_set = &cfg->bc_kbyte_per_sec_rate;
-		storm_type = MVSW_PORT_STORM_CTL_TYPE_BC;
+		storm_type = PRESTERA_PORT_STORM_CTL_TYPE_BC;
 		break;
 	case PORT_PARAM_ID_UC_UNK_RATE:
 		param_to_set = &cfg->unk_uc_kbyte_per_sec_rate;
-		storm_type = MVSW_PORT_STORM_CTL_TYPE_UC_UNK;
+		storm_type = PRESTERA_PORT_STORM_CTL_TYPE_UC_UNK;
 		break;
 	case PORT_PARAM_ID_MC_RATE:
 		param_to_set = &cfg->unreg_mc_kbyte_per_sec_rate;
-		storm_type = MVSW_PORT_STORM_CTL_TYPE_MC;
+		storm_type = PRESTERA_PORT_STORM_CTL_TYPE_MC;
 		break;
 	default:
 		return -EINVAL;
 	}
 
 	if (kbyte_per_sec_rate != *param_to_set) {
-		ret = mvsw_pr_hw_port_storm_control_cfg_set(port, storm_type,
-							    kbyte_per_sec_rate);
+		ret = prestera_hw_port_storm_control_cfg_set(port, storm_type,
+							     kbyte_per_sec_rate);
 		if (ret)
 			return ret;
 

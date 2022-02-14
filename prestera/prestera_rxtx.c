@@ -684,7 +684,7 @@ static void mvsw_rxtx_handle_event(struct prestera_switch *sw,
 {
 	struct mvsw_pr_rxtx_sdma *sdma = arg;
 
-	if (evt->id != MVSW_RXTX_EVENT_RCV_PKT)
+	if (evt->id != PRESTERA_RXTX_EVENT_RCV_PKT)
 		return;
 
 	mvsw_reg_write(sdma->sw, SDMA_RX_INTR_MASK_REG, 0);
@@ -709,7 +709,7 @@ int prestera_rxtx_switch_init(struct prestera_switch *sw)
 
 	sdma = &sw->rxtx->sdma;
 
-	err = mvsw_pr_hw_rxtx_init(sw, true, &sdma->map_addr);
+	err = prestera_hw_rxtx_init(sw, true, &sdma->map_addr);
 	if (err) {
 		dev_err(sw->dev->dev, "failed to init rxtx by hw\n");
 		goto err_hw_rxtx_init;
@@ -737,8 +737,8 @@ int prestera_rxtx_switch_init(struct prestera_switch *sw)
 		goto err_tx_init;
 	}
 
-	err = mvsw_pr_hw_event_handler_register(sw, MVSW_EVENT_TYPE_RXTX,
-						mvsw_rxtx_handle_event, sdma);
+	err = prestera_hw_event_handler_register(sw, PRESTERA_EVENT_TYPE_RXTX,
+						 mvsw_rxtx_handle_event, sdma);
 	if (err)
 		goto err_evt_register;
 
@@ -768,7 +768,7 @@ void prestera_rxtx_switch_fini(struct prestera_switch *sw)
 {
 	struct mvsw_pr_rxtx_sdma *sdma = &sw->rxtx->sdma;
 
-	mvsw_pr_hw_event_handler_unregister(sw, MVSW_EVENT_TYPE_RXTX);
+	prestera_hw_event_handler_unregister(sw, PRESTERA_EVENT_TYPE_RXTX);
 	napi_disable(&sdma->rx_napi);
 	netif_napi_del(&sdma->rx_napi);
 	mvsw_sdma_rx_fini(sdma);
@@ -878,7 +878,7 @@ netdev_tx_t prestera_rxtx_xmit(struct sk_buff *skb, struct prestera_port *port)
 
 	from_cpu->dst_iface.dev_port.port_num = port->hw_id;
 	from_cpu->dst_iface.dev_port.hw_dev_num = port->dev_id;
-	from_cpu->dst_iface.type = MVSW_IF_PORT_E;
+	from_cpu->dst_iface.type = PRESTERA_IF_PORT_E;
 
 	/* epmorary removing due to issue with vlan sub interface
 	 * on 1.Q bridge
