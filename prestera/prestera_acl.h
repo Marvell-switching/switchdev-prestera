@@ -45,7 +45,6 @@
 #define rule_match_get_u32(match_p, type)			\
 	(match_p[PRESTERA_ACL_RULE_MATCH_TYPE_##type])
 
-#define MVSW_PR_NH_ACTIVE_JIFFER_FILTER 3000 /* ms */
 #define MVSW_ACL_RULE_DEF_HW_CHAIN_ID	0
 #define MVSW_ACL_RULESET_ALL		0xff
 

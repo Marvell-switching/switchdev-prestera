@@ -12,6 +12,8 @@
 #define PRESTERA_ACL_RULE_DEF_HW_TC	3
 #define ACL_KEYMASK_SIZE	\
 	(sizeof(__be32) * __PRESTERA_ACL_RULE_MATCH_TYPE_MAX)
+/* Need to merge it with router_manager */
+#define MVSW_PR_NH_ACTIVE_JIFFER_FILTER 3000 /* ms */
 
 struct prestera_acl_ruleset_ht_key {
 	struct prestera_flow_block *block;
@@ -527,7 +529,7 @@ static int prestera_acl_nat_port_neigh_lookup(struct prestera_port *port,
 		if (IS_ERR(n_cache))
 			continue;
 		n_info = prestera_kern_neigh_cache_to_neigh_info(n_cache);
-		if (n_info->iface.type == MVSW_IF_PORT_E &&
+		if (n_info->iface.type == PRESTERA_IF_PORT_E &&
 		    n_info->iface.dev_port.port_num == port->hw_id &&
 		    n_info->iface.dev_port.hw_dev_num == port->dev_id) {
 			memcpy(ni, n_info, sizeof(*n_info));
@@ -874,47 +876,47 @@ static int __prestera_acl_rule_entry2hw_add(struct prestera_switch *sw,
 
 	/* accept */
 	if (e->accept.valid) {
-		act_hw[act_num].id = MVSW_ACL_RULE_ACTION_ACCEPT;
+		act_hw[act_num].id = PRESTERA_ACL_RULE_ACTION_ACCEPT;
 		act_num++;
 	}
 	/* drop */
 	if (e->drop.valid) {
-		act_hw[act_num].id = MVSW_ACL_RULE_ACTION_DROP;
+		act_hw[act_num].id = PRESTERA_ACL_RULE_ACTION_DROP;
 		act_num++;
 	}
 	/* trap */
 	if (e->trap.valid) {
-		act_hw[act_num].id = MVSW_ACL_RULE_ACTION_TRAP;
+		act_hw[act_num].id = PRESTERA_ACL_RULE_ACTION_TRAP;
 		act_hw[act_num].trap = e->trap.i;
 		act_num++;
 	}
 	/* police */
 	if (e->police.valid) {
-		act_hw[act_num].id = MVSW_ACL_RULE_ACTION_POLICE;
+		act_hw[act_num].id = PRESTERA_ACL_RULE_ACTION_POLICE;
 		act_hw[act_num].police = e->police.i;
 		act_num++;
 	}
 	/* nat */
 	if (e->nat.valid) {
-		act_hw[act_num].id = MVSW_ACL_RULE_ACTION_NAT;
+		act_hw[act_num].id = PRESTERA_ACL_RULE_ACTION_NAT;
 		act_hw[act_num].nat = e->nat.i;
 		act_num++;
 	}
 	/* jump */
 	if (e->jump.valid) {
-		act_hw[act_num].id = MVSW_ACL_RULE_ACTION_JUMP;
+		act_hw[act_num].id = PRESTERA_ACL_RULE_ACTION_JUMP;
 		act_hw[act_num].jump = e->jump.i;
 		act_num++;
 	}
 	/* nh */
 	if (e->nh.valid) {
-		act_hw[act_num].id = MVSW_ACL_RULE_ACTION_NH;
+		act_hw[act_num].id = PRESTERA_ACL_RULE_ACTION_NH;
 		act_hw[act_num].nh = e->nh.e->hw_id;
 		act_num++;
 	}
 	/* counter */
 	if (e->counter.block) {
-		act_hw[act_num].id = MVSW_ACL_RULE_ACTION_COUNT;
+		act_hw[act_num].id = PRESTERA_ACL_RULE_ACTION_COUNT;
 		act_hw[act_num].count.id = e->counter.id;
 		act_num++;
 	}
@@ -1000,6 +1002,9 @@ err_out:
 	return -EINVAL;
 }
 
+/* TODO: move acl_rule entry and lowest objects to
+ * appropriate files (hw_nh.c, hw_match.c)
+ */
 struct prestera_acl_rule_entry *
 prestera_acl_rule_entry_create(struct prestera_acl *acl,
 			       struct prestera_acl_rule_entry_key *key,
@@ -1164,7 +1169,8 @@ int prestera_acl_vtcam_id_get(struct prestera_acl *acl, u8 lookup,
 	if (!vtcam)
 		return -ENOMEM;
 
-	err = prestera_hw_vtcam_create(acl->sw, lookup, keymask, &new_vtcam_id);
+	err = prestera_hw_vtcam_create(acl->sw, lookup, keymask, &new_vtcam_id,
+				       PRESTERA_HW_VTCAM_DIR_INGRESS);
 	if (err) {
 		kfree(vtcam);
 

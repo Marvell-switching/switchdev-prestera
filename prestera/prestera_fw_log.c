@@ -48,7 +48,7 @@ struct mvsw_pr_fw_log_prv_debugfs {
 	char *read_buf;
 };
 
-static u8 fw_log_lib_type_config[MVSW_FW_LOG_LIB_MAX] = { 0 };
+static u8 fw_log_lib_type_config[PRESTERA_FW_LOG_LIB_MAX] = { 0 };
 
 static struct mvsw_pr_fw_log_prv_debugfs fw_log_debugfs_handle = {
 	.cfg_dir = NULL,
@@ -60,68 +60,72 @@ static struct mvsw_pr_fw_log_prv_debugfs fw_log_debugfs_handle = {
 	}
 };
 
-static const char *mvsw_pr_fw_log_lib_id2name[MVSW_FW_LOG_LIB_MAX] = {
-	[MVSW_FW_LOG_LIB_ALL] =  "all",
-	[MVSW_FW_LOG_LIB_BRIDGE] =  "bridge",
-	[MVSW_FW_LOG_LIB_CNC] =  "cnc",
-	[MVSW_FW_LOG_LIB_CONFIG] =  "config",
-	[MVSW_FW_LOG_LIB_COS] =  "cos",
-	[MVSW_FW_LOG_LIB_CSCD] =  "cscd",
-	[MVSW_FW_LOG_LIB_CUT_THROUGH] =  "cut-through",
-	[MVSW_FW_LOG_LIB_DIAG] =  "diag",
-	[MVSW_FW_LOG_LIB_DRAGONITE] =  "dragonite",
-	[MVSW_FW_LOG_LIB_EGRESS] =  "egress",
-	[MVSW_FW_LOG_LIB_EXACT_MATCH] =  "exact-match",
-	[MVSW_FW_LOG_LIB_FABRIC] =  "fabric",
-	[MVSW_FW_LOG_LIB_BRIDGE_FDB_MANAGER] =  "fdb-manager",
-	[MVSW_FW_LOG_LIB_FLOW_MANAGER] =  "flow-manager",
-	[MVSW_FW_LOG_LIB_HW_INIT] =  "hw-init",
-	[MVSW_FW_LOG_LIB_I2C] =  "i2c",
-	[MVSW_FW_LOG_LIB_INGRESS] =  "ingress",
-	[MVSW_FW_LOG_LIB_INIT] =  "init",
-	[MVSW_FW_LOG_LIB_IPFIX] =  "ipfix",
-	[MVSW_FW_LOG_LIB_IP] =  "ip",
-	[MVSW_FW_LOG_LIB_IP_LPM] =  "ip-lpm",
-	[MVSW_FW_LOG_LIB_L2_MLL] =  "l2-mll",
-	[MVSW_FW_LOG_LIB_LATENCY_MONITORING] =  "latency-monitoring",
-	[MVSW_FW_LOG_LIB_LOGICAL_TARGET] =  "logical-target",
-	[MVSW_FW_LOG_LIB_LPM] =  "lpm",
-	[MVSW_FW_LOG_LIB_MIRROR] =  "mirror",
-	[MVSW_FW_LOG_LIB_MULTI_PORT_GROUP] =  "multi-port-group",
-	[MVSW_FW_LOG_LIB_NETWORK_IF] =  "network-if",
-	[MVSW_FW_LOG_LIB_NST] =  "nst",
-	[MVSW_FW_LOG_LIB_OAM] =  "oam",
-	[MVSW_FW_LOG_LIB_PACKET_ANALYZER] =  "packet-analyzer",
-	[MVSW_FW_LOG_LIB_PCL] =  "pcl",
-	[MVSW_FW_LOG_LIB_PHA] =  "pha",
-	[MVSW_FW_LOG_LIB_PHY] =  "phy",
-	[MVSW_FW_LOG_LIB_POLICER] =  "policer",
-	[MVSW_FW_LOG_LIB_PROTECTION] =  "protection",
-	[MVSW_FW_LOG_LIB_PTP] =  "ptp",
-	[MVSW_FW_LOG_LIB_RESOURCE_MANAGER] =  "resource-manager",
-	[MVSW_FW_LOG_LIB_SMI] =  "smi",
-	[MVSW_FW_LOG_LIB_SYSTEM_RECOVERY] =  "system-recovery",
-	[MVSW_FW_LOG_LIB_TAM] =  "tam",
-	[MVSW_FW_LOG_LIB_TCAM] =  "tcam",
-	[MVSW_FW_LOG_LIB_TM] =  "tm",
-	[MVSW_FW_LOG_LIB_TM_GLUE] =  "tm-glue",
-	[MVSW_FW_LOG_LIB_TRUNK] =  "trunk",
-	[MVSW_FW_LOG_LIB_TTI] =  "tti",
-	[MVSW_FW_LOG_LIB_TUNNEL] =  "tunnel",
-	[MVSW_FW_LOG_LIB_VERSION] =  "version",
-	[MVSW_FW_LOG_LIB_VIRTUAL_TCAM] =  "virtual-tcam",
-	[MVSW_FW_LOG_LIB_VNT] =  "vnt",
-	[MVSW_FW_LOG_LIB_PPU] = "ppu",
-	[MVSW_FW_LOG_LIB_EXACT_MATCH_MANAGER] = "exact-match-manager",
-	[MVSW_FW_LOG_LIB_MAC_SEC] = "mac-sec",
+static const char *mvsw_pr_fw_log_lib_id2name[PRESTERA_FW_LOG_LIB_MAX] = {
+	[PRESTERA_FW_LOG_LIB_ALL] =  "all",
+	[PRESTERA_FW_LOG_LIB_BRIDGE] =  "bridge",
+	[PRESTERA_FW_LOG_LIB_CNC] =  "cnc",
+	[PRESTERA_FW_LOG_LIB_CONFIG] =  "config",
+	[PRESTERA_FW_LOG_LIB_COS] =  "cos",
+	[PRESTERA_FW_LOG_LIB_CSCD] =  "cscd",
+	[PRESTERA_FW_LOG_LIB_CUT_THROUGH] =  "cut-through",
+	[PRESTERA_FW_LOG_LIB_DIAG] =  "diag",
+	[PRESTERA_FW_LOG_LIB_DRAGONITE] =  "dragonite",
+	[PRESTERA_FW_LOG_LIB_EGRESS] =  "egress",
+	[PRESTERA_FW_LOG_LIB_EXACT_MATCH] =  "exact-match",
+	[PRESTERA_FW_LOG_LIB_FABRIC] =  "fabric",
+	[PRESTERA_FW_LOG_LIB_BRIDGE_FDB_MANAGER] =  "fdb-manager",
+	[PRESTERA_FW_LOG_LIB_FLOW_MANAGER] =  "flow-manager",
+	[PRESTERA_FW_LOG_LIB_HW_INIT] =  "hw-init",
+	[PRESTERA_FW_LOG_LIB_I2C] =  "i2c",
+	[PRESTERA_FW_LOG_LIB_INGRESS] =  "ingress",
+	[PRESTERA_FW_LOG_LIB_INIT] =  "init",
+	[PRESTERA_FW_LOG_LIB_IPFIX] =  "ipfix",
+	[PRESTERA_FW_LOG_LIB_IP] =  "ip",
+	[PRESTERA_FW_LOG_LIB_IP_LPM] =  "ip-lpm",
+	[PRESTERA_FW_LOG_LIB_L2_MLL] =  "l2-mll",
+	[PRESTERA_FW_LOG_LIB_LATENCY_MONITORING] =  "latency-monitoring",
+	[PRESTERA_FW_LOG_LIB_LOGICAL_TARGET] =  "logical-target",
+	[PRESTERA_FW_LOG_LIB_LPM] =  "lpm",
+	[PRESTERA_FW_LOG_LIB_MIRROR] =  "mirror",
+	[PRESTERA_FW_LOG_LIB_MULTI_PORT_GROUP] =  "multi-port-group",
+	[PRESTERA_FW_LOG_LIB_NETWORK_IF] =  "network-if",
+	[PRESTERA_FW_LOG_LIB_NST] =  "nst",
+	[PRESTERA_FW_LOG_LIB_OAM] =  "oam",
+	[PRESTERA_FW_LOG_LIB_PACKET_ANALYZER] =  "packet-analyzer",
+	[PRESTERA_FW_LOG_LIB_PCL] =  "pcl",
+	[PRESTERA_FW_LOG_LIB_PHA] =  "pha",
+	[PRESTERA_FW_LOG_LIB_PHY] =  "phy",
+	[PRESTERA_FW_LOG_LIB_POLICER] =  "policer",
+	[PRESTERA_FW_LOG_LIB_PROTECTION] =  "protection",
+	[PRESTERA_FW_LOG_LIB_PTP] =  "ptp",
+	[PRESTERA_FW_LOG_LIB_RESOURCE_MANAGER] =  "resource-manager",
+	[PRESTERA_FW_LOG_LIB_SMI] =  "smi",
+	[PRESTERA_FW_LOG_LIB_SYSTEM_RECOVERY] =  "system-recovery",
+	[PRESTERA_FW_LOG_LIB_TAM] =  "tam",
+	[PRESTERA_FW_LOG_LIB_TCAM] =  "tcam",
+	[PRESTERA_FW_LOG_LIB_TM] =  "tm",
+	[PRESTERA_FW_LOG_LIB_TM_GLUE] =  "tm-glue",
+	[PRESTERA_FW_LOG_LIB_TRUNK] =  "trunk",
+	[PRESTERA_FW_LOG_LIB_TTI] =  "tti",
+	[PRESTERA_FW_LOG_LIB_TUNNEL] =  "tunnel",
+	[PRESTERA_FW_LOG_LIB_VERSION] =  "version",
+	[PRESTERA_FW_LOG_LIB_VIRTUAL_TCAM] =  "virtual-tcam",
+	[PRESTERA_FW_LOG_LIB_VNT] =  "vnt",
+	[PRESTERA_FW_LOG_LIB_PPU] = "ppu",
+	[PRESTERA_FW_LOG_LIB_EXACT_MATCH_MANAGER] = "exact-match-manager",
+	[PRESTERA_FW_LOG_LIB_MAC_SEC] = "mac-sec",
+	[PRESTERA_FW_LOG_LIB_PTP_MANAGER] = "ptp-manager",
+	[PRESTERA_FW_LOG_LIB_HSR_PRP] = "hsr-prp",
+	[PRESTERA_FW_LOG_LIB_STREAM] = "stream",
+	[PRESTERA_FW_LOG_LIB_IPFIX_MANAGER] = "ipfix_manager",
 };
 
-static const char *mvsw_pr_fw_log_prv_type_id2name[MVSW_FW_LOG_TYPE_MAX] = {
-	[MVSW_FW_LOG_TYPE_INFO] = "info",
-	[MVSW_FW_LOG_TYPE_ENTRY_LEVEL_FUNCTION] = "entry-level-function",
-	[MVSW_FW_LOG_TYPE_ERROR] = "error",
-	[MVSW_FW_LOG_TYPE_ALL] = "all",
-	[MVSW_FW_LOG_TYPE_NONE]  = "none",
+static const char *mvsw_pr_fw_log_prv_type_id2name[PRESTERA_FW_LOG_TYPE_MAX] = {
+	[PRESTERA_FW_LOG_TYPE_INFO] = "info",
+	[PRESTERA_FW_LOG_TYPE_ENTRY_LEVEL_FUNCTION] = "entry-level-function",
+	[PRESTERA_FW_LOG_TYPE_ERROR] = "error",
+	[PRESTERA_FW_LOG_TYPE_ALL] = "all",
+	[PRESTERA_FW_LOG_TYPE_NONE]  = "none",
 };
 
 static void mvsw_pr_fw_log_evt_handler(struct prestera_switch *sw,
@@ -151,9 +155,9 @@ static ssize_t mvsw_pr_fw_log_format_str(void)
 
 	chars_written += ret;
 
-	for (type = 0; type < MVSW_FW_LOG_TYPE_MAX; ++type) {
-		if (type == MVSW_FW_LOG_TYPE_NONE ||
-		    type == MVSW_FW_LOG_TYPE_ALL)
+	for (type = 0; type < PRESTERA_FW_LOG_TYPE_MAX; ++type) {
+		if (type == PRESTERA_FW_LOG_TYPE_NONE ||
+		    type == PRESTERA_FW_LOG_TYPE_ALL)
 			continue;
 
 		ret = snprintf(buf + chars_written,
@@ -169,8 +173,8 @@ static ssize_t mvsw_pr_fw_log_format_str(void)
 	strcat(buf, "\n");
 	++chars_written;
 
-	for (lib = 0; lib < MVSW_FW_LOG_LIB_MAX; ++lib) {
-		if (lib == MVSW_FW_LOG_LIB_ALL ||
+	for (lib = 0; lib < PRESTERA_FW_LOG_LIB_MAX; ++lib) {
+		if (lib == PRESTERA_FW_LOG_LIB_ALL ||
 		    !mvsw_pr_fw_log_lib_id2name[lib])
 			continue;
 
@@ -183,9 +187,9 @@ static ssize_t mvsw_pr_fw_log_format_str(void)
 
 		chars_written += ret;
 
-		for (type = 0; type < MVSW_FW_LOG_TYPE_MAX; ++type) {
-			if (type == MVSW_FW_LOG_TYPE_NONE ||
-			    type == MVSW_FW_LOG_TYPE_ALL)
+		for (type = 0; type < PRESTERA_FW_LOG_TYPE_MAX; ++type) {
+			if (type == PRESTERA_FW_LOG_TYPE_NONE ||
+			    type == PRESTERA_FW_LOG_TYPE_ALL)
 				continue;
 
 			ret = snprintf(buf + chars_written,
@@ -255,9 +259,10 @@ static int mvsw_pr_fw_log_parse_usr_input(int *name, int *type,
 	*name = mvsw_pr_fw_log_get_lib_from_str(lib_str);
 	*type = mvsw_pr_fw_log_get_type_from_str(type_str);
 
-	if (*name >= MVSW_FW_LOG_LIB_MAX ||
-	    *type >= MVSW_FW_LOG_TYPE_MAX ||
-	    (*name != MVSW_FW_LOG_LIB_ALL && *type == MVSW_FW_LOG_TYPE_NONE))
+	if (*name >= PRESTERA_FW_LOG_LIB_MAX ||
+	    *type >= PRESTERA_FW_LOG_TYPE_MAX ||
+	    (*name != PRESTERA_FW_LOG_LIB_ALL &&
+	     *type == PRESTERA_FW_LOG_TYPE_NONE))
 		return -EINVAL;
 
 	return 0;
@@ -276,33 +281,36 @@ static ssize_t mvsw_pr_fw_log_debugfs_write(struct file *file,
 	if (err)
 		goto error;
 
-	err = mvsw_pr_hw_fw_log_level_set(sw, lib, type);
+	err = prestera_hw_fw_log_level_set(sw, lib, type);
 	if (err) {
 		dev_err(mvsw_dev(sw), "Failed to send request to firmware\n");
 		return err;
 	}
 
 	/* specific lib and specific type */
-	if (lib != MVSW_FW_LOG_LIB_ALL && type != MVSW_FW_LOG_TYPE_ALL) {
+	if (lib != PRESTERA_FW_LOG_LIB_ALL &&
+	    type != PRESTERA_FW_LOG_TYPE_ALL) {
 		/* special type 'NONE' to disable feature */
-		if (type == MVSW_FW_LOG_TYPE_NONE)
+		if (type == PRESTERA_FW_LOG_TYPE_NONE)
 			memset(fw_log_lib_type_config, 0,
 			       sizeof(fw_log_lib_type_config));
 		/* Actual type should be switched */
 		else
 			fw_log_lib_type_config[lib] ^= (1 << type);
 	/* specific lib but all types */
-	} else if (lib != MVSW_FW_LOG_LIB_ALL && type == MVSW_FW_LOG_TYPE_ALL) {
-		for (j = 0; j < MVSW_FW_LOG_TYPE_ALL; ++j)
+	} else if (lib != PRESTERA_FW_LOG_LIB_ALL &&
+		   type == PRESTERA_FW_LOG_TYPE_ALL) {
+		for (j = 0; j < PRESTERA_FW_LOG_TYPE_ALL; ++j)
 			fw_log_lib_type_config[lib] ^= (1 << j);
 	/* specific type but all libs */
-	} else if (lib == MVSW_FW_LOG_LIB_ALL && type != MVSW_FW_LOG_TYPE_ALL) {
-		for (i = 0; i < MVSW_FW_LOG_LIB_ALL; ++i)
+	} else if (lib == PRESTERA_FW_LOG_LIB_ALL &&
+		   type != PRESTERA_FW_LOG_TYPE_ALL) {
+		for (i = 0; i < PRESTERA_FW_LOG_LIB_ALL; ++i)
 			fw_log_lib_type_config[i] |= (1 << type);
 	/* all libs and all types */
 	} else {
-		for (i = 0; i < MVSW_FW_LOG_LIB_ALL; ++i) {
-			for (j = 0; j < MVSW_FW_LOG_TYPE_ALL; ++j)
+		for (i = 0; i < PRESTERA_FW_LOG_LIB_ALL; ++i) {
+			for (j = 0; j < PRESTERA_FW_LOG_TYPE_ALL; ++j)
 				fw_log_lib_type_config[i] |= (1 << j);
 		}
 	}
@@ -330,7 +338,7 @@ static inline int mvsw_pr_fw_log_get_type_from_str(const char *str)
 {
 	int i;
 
-	for (i = 0; i < MVSW_FW_LOG_TYPE_MAX; ++i) {
+	for (i = 0; i < PRESTERA_FW_LOG_TYPE_MAX; ++i) {
 		if (!mvsw_pr_fw_log_prv_type_id2name[i])
 			continue;
 
@@ -338,14 +346,14 @@ static inline int mvsw_pr_fw_log_get_type_from_str(const char *str)
 			return i;
 	}
 
-	return MVSW_FW_LOG_TYPE_MAX;
+	return PRESTERA_FW_LOG_TYPE_MAX;
 }
 
 static inline int mvsw_pr_fw_log_get_lib_from_str(const char *str)
 {
 	int i;
 
-	for (i = 0; i < MVSW_FW_LOG_LIB_MAX; ++i) {
+	for (i = 0; i < PRESTERA_FW_LOG_LIB_MAX; ++i) {
 		if (!mvsw_pr_fw_log_lib_id2name[i])
 			continue;
 
@@ -353,19 +361,20 @@ static inline int mvsw_pr_fw_log_get_lib_from_str(const char *str)
 			return i;
 	}
 
-	return MVSW_FW_LOG_LIB_MAX;
+	return PRESTERA_FW_LOG_LIB_MAX;
 }
 
 static int mvsw_pr_fw_log_event_handler_register(struct prestera_switch *sw)
 {
-	return mvsw_pr_hw_event_handler_register(sw, MVSW_EVENT_TYPE_FW_LOG,
-						 mvsw_pr_fw_log_evt_handler,
-						 NULL);
+	return prestera_hw_event_handler_register(sw,
+						  PRESTERA_EVENT_TYPE_FW_LOG,
+						  mvsw_pr_fw_log_evt_handler,
+						  NULL);
 }
 
 static void mvsw_pr_fw_log_event_handler_unregister(struct prestera_switch *sw)
 {
-	mvsw_pr_hw_event_handler_unregister(sw, MVSW_EVENT_TYPE_FW_LOG);
+	prestera_hw_event_handler_unregister(sw, PRESTERA_EVENT_TYPE_FW_LOG);
 }
 
 int mvsw_pr_fw_log_init(struct prestera_switch *sw)
@@ -398,8 +407,8 @@ int mvsw_pr_fw_log_init(struct prestera_switch *sw)
 	if (!fw_log_debugfs_handle.read_buf)
 		goto error;
 
-	mvsw_pr_hw_fw_log_level_set(sw, MVSW_FW_LOG_LIB_ALL,
-				    MVSW_FW_LOG_TYPE_NONE);
+	prestera_hw_fw_log_level_set(sw, PRESTERA_FW_LOG_LIB_ALL,
+				     PRESTERA_FW_LOG_TYPE_NONE);
 	mvsw_pr_fw_log_format_str();
 
 	return 0;

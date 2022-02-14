@@ -14,7 +14,7 @@
 #define PRESTERA_FW_ARM64_PATH		"marvell/mvsw_prestera_fw_arm64.img"
 
 #define PRESTERA_SUPP_FW_MAJ_VER	3
-#define PRESTERA_SUPP_FW_MIN_VER	0
+#define PRESTERA_SUPP_FW_MIN_VER	1
 #define PRESTERA_SUPP_FW_PATCH_VER	1
 
 #define prestera_wait(cond, waitms) \
@@ -248,6 +248,9 @@ struct prestera_fw {
 #define PRESTERA_DEV_ID_ALDRIN2		0xCC1E
 #define PRESTERA_DEV_ID_ALDRIN3S	0x981F
 #define PRESTERA_DEV_ID_98DX3500	0x9820
+#define PRESTERA_DEV_ID_98DX3501	0x9826
+#define PRESTERA_DEV_ID_98DX3510	0x9821
+#define PRESTERA_DEV_ID_98DX3520	0x9822
 
 static struct prestera_pci_match {
 	struct pci_driver driver;
@@ -273,6 +276,18 @@ static struct prestera_pci_match {
 	{
 		.driver = { .name = "AC5X 98DX3500", },
 		.id = { PRESTERA_DEVICE(PRESTERA_DEV_ID_98DX3500), 0 },
+	},
+	{
+		.driver = { .name = "AC5X 98DX3501", },
+		.id = { PRESTERA_DEVICE(PRESTERA_DEV_ID_98DX3501), 0 },
+	},
+	{
+		.driver = { .name = "AC5X 98DX3510", },
+		.id = { PRESTERA_DEVICE(PRESTERA_DEV_ID_98DX3510), 0 },
+	},
+	{
+		.driver = { .name = "AC5X 98DX3520", },
+		.id = { PRESTERA_DEVICE(PRESTERA_DEV_ID_98DX3520), 0 },
 	},
 	{{ }, }
 };
@@ -755,6 +770,9 @@ static const char *prestera_fw_path_get(struct prestera_fw *fw)
 {
 	switch (fw->pci_dev->device) {
 	case PRESTERA_DEV_ID_98DX3500:
+	case PRESTERA_DEV_ID_98DX3501:
+	case PRESTERA_DEV_ID_98DX3510:
+	case PRESTERA_DEV_ID_98DX3520:
 		return PRESTERA_FW_ARM64_PATH;
 
 	default:
@@ -821,11 +839,30 @@ static bool prestera_pci_pp_use_bar2(struct pci_dev *pdev)
 	switch (pdev->device) {
 	case PRESTERA_DEV_ID_ALDRIN3S:
 	case PRESTERA_DEV_ID_98DX3500:
+	case PRESTERA_DEV_ID_98DX3501:
+	case PRESTERA_DEV_ID_98DX3510:
+	case PRESTERA_DEV_ID_98DX3520:
 		return true;
 
 	default:
 		return false;
 	}
+}
+
+static u32 prestera_pci_pp_bar2_offs(struct pci_dev *pdev)
+{
+	if (pci_resource_len(pdev, 2) == 0x1000000)
+		return 0x0;
+	else
+		return (pci_resource_len(pdev, 2) / 2);
+}
+
+static u32 prestera_pci_fw_bar2_offs(struct pci_dev *pdev)
+{
+	if (pci_resource_len(pdev, 2) == 0x1000000)
+		return 0x400000;
+	else
+		return 0x0;
 }
 
 static int prestera_pci_probe(struct pci_dev *pdev,
@@ -862,7 +899,8 @@ static int prestera_pci_probe(struct pci_dev *pdev,
 
 	/* Aldrin3S uses second half of BAR2 */
 	if (prestera_pci_pp_use_bar2(pdev)) {
-		pp_addr = mem_addr + pci_resource_len(pdev, 2) / 2;
+		pp_addr = mem_addr + prestera_pci_pp_bar2_offs(pdev);
+		mem_addr = mem_addr + prestera_pci_fw_bar2_offs(pdev);
 	} else {
 		pp_addr = pcim_iomap(pdev, 4, 0);
 		if (!pp_addr) {

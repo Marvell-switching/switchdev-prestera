@@ -25,6 +25,7 @@
 #define PRESTERA_DEFAULT_AGEING_TIME 300000
 
 #define PRESTERA_NHGR_SIZE_MAX 4
+#define PRESTERA_AP_PORT_MAX   (10)
 
 #define PRESTERA_PORT_SRCID_ZERO 0 /* source_id */
 
@@ -67,7 +68,7 @@ struct prestera_flow_block {
 
 struct prestera_port_vlan {
 	struct list_head list;
-	struct prestera_port *mvsw_pr_port;
+	struct prestera_port *port;
 	u16 vid;
 	struct prestera_bridge_port *bridge_port;
 	struct list_head bridge_vlan_node;
@@ -113,19 +114,22 @@ struct prestera_port_caps {
 	u8 transceiver;
 };
 
-struct prestera_port_link_params {
-	u64 lmode_bmap;
+struct prestera_port_mac_state {
+	bool oper;
+	u32 mode;
 	u32 speed;
 	u8 duplex;
-	bool oper_state;
+	u8 fc;
+	u8 fec;
+};
+
+struct prestera_port_phy_state {
+	u64 lmode_bmap;
 	struct {
 		bool pause;
 		bool asym_pause;
 	} remote_fc;
-	struct {
-		u8 status;
-		u8 admin_mode;
-	} mdix;
+	u8 mdix;
 };
 
 struct prestera_rxtx_stats {
@@ -151,6 +155,7 @@ struct prestera_port_mac_config {
 struct prestera_port_phy_config {
 	bool admin;
 	u32 mode;
+	u8 mdix;
 };
 
 struct prestera_port {
@@ -180,21 +185,10 @@ struct prestera_port {
 	struct phylink_config phy_config;
 	struct phylink *phy_link;
 
-	struct prestera_port_link_params link_params;
+	struct prestera_port_mac_state state_mac;
+	struct prestera_port_phy_state state_phy;
 
 	struct prestera_rxtx_stats __percpu *rxtx_stats;
-};
-
-struct prestera_switchdev {
-	struct prestera_switch *sw;
-	struct notifier_block swdev_n;
-	struct notifier_block swdev_blocking_n;
-};
-
-struct prestera_fib {
-	struct prestera_switch *sw;
-	struct notifier_block fib_nb;
-	struct notifier_block netevent_nb;
 };
 
 struct prestera_device {
@@ -222,43 +216,43 @@ struct prestera_device {
 };
 
 enum prestera_event_type {
-	MVSW_EVENT_TYPE_UNSPEC,
-	MVSW_EVENT_TYPE_PORT,
-	MVSW_EVENT_TYPE_FDB,
-	MVSW_EVENT_TYPE_RXTX,
-	MVSW_EVENT_TYPE_FW_LOG,
-	MVSW_EVENT_TYPE_PULSE,
+	PRESTERA_EVENT_TYPE_UNSPEC,
+	PRESTERA_EVENT_TYPE_PORT,
+	PRESTERA_EVENT_TYPE_FDB,
+	PRESTERA_EVENT_TYPE_RXTX,
+	PRESTERA_EVENT_TYPE_FW_LOG,
+	PRESTERA_EVENT_TYPE_PULSE,
 
-	MVSW_EVENT_TYPE_MAX,
+	PRESTERA_EVENT_TYPE_MAX,
 };
 
 enum prestera_rxtx_event_id {
-	MVSW_RXTX_EVENT_UNSPEC,
+	PRESTERA_RXTX_EVENT_UNSPEC,
 
-	MVSW_RXTX_EVENT_RCV_PKT,
+	PRESTERA_RXTX_EVENT_RCV_PKT,
 
-	MVSW_RXTX_EVENT_MAX,
+	PRESTERA_RXTX_EVENT_MAX,
 };
 
 enum prestera_port_event_id {
-	MVSW_PORT_EVENT_UNSPEC,
-	MVSW_PORT_EVENT_STATE_CHANGED,
+	PRESTERA_PORT_EVENT_UNSPEC,
+	PRESTERA_PORT_EVENT_MAC_STATE_CHANGED,
 
-	MVSW_PORT_EVENT_MAX,
+	PRESTERA_PORT_EVENT_MAX,
 };
 
 enum prestera_fdb_event_id {
-	MVSW_FDB_EVENT_UNSPEC,
-	MVSW_FDB_EVENT_LEARNED,
-	MVSW_FDB_EVENT_AGED,
+	PRESTERA_FDB_EVENT_UNSPEC,
+	PRESTERA_FDB_EVENT_LEARNED,
+	PRESTERA_FDB_EVENT_AGED,
 
-	MVSW_FDB_EVENT_MAX,
+	PRESTERA_FDB_EVENT_MAX,
 };
 
 enum prestera_fdb_entry_type {
-	MVSW_PR_FDB_ENTRY_TYPE_REG_PORT,
-	MVSW_PR_FDB_ENTRY_TYPE_LAG,
-	MVSW_PR_FDB_ENTRY_TYPE_MAX
+	PRESTERA_FDB_ENTRY_TYPE_REG_PORT,
+	PRESTERA_FDB_ENTRY_TYPE_LAG,
+	PRESTERA_FDB_ENTRY_TYPE_MAX
 };
 
 struct prestera_fdb_event {
@@ -275,14 +269,23 @@ struct prestera_fdb_event {
 
 struct prestera_port_event {
 	u32 port_id;
-	struct {
-		u64 lmode_bmap;
-		u32 link_mode;
-		u8 oper_state;
-		bool pause;
-		bool asym_pause;
-		u8 status;
-		u8 admin_mode;
+	union {
+		struct {
+			u8 oper;
+			u32 mode;
+			u32 speed;
+			u8 duplex;
+			u8 fc;
+			u8 fec;
+		} mac;
+		struct {
+			u8 mdix;
+			u64 lmode_bmap;
+			struct {
+				bool pause;
+				bool asym_pause;
+			} remote_fc;
+		} phy;
 	} data;
 };
 
@@ -313,13 +316,13 @@ struct prestera_lag {
 
 enum prestera_if_type {
 	/* the interface is of port type (dev,port) */
-	MVSW_IF_PORT_E = 0,
+	PRESTERA_IF_PORT_E = 0,
 
 	/* the interface is of lag type (lag-id) */
-	MVSW_IF_LAG_E = 1,
+	PRESTERA_IF_LAG_E = 1,
 
 	/* the interface is of Vid type (vlan-id) */
-	MVSW_IF_VID_E = 3,
+	PRESTERA_IF_VID_E = 3,
 };
 
 struct prestera_iface {
@@ -334,7 +337,7 @@ struct prestera_iface {
 	u32 hw_dev_num;
 };
 
-struct prestera_bridge;
+struct prestera_switchdev;
 struct prestera_router;
 struct prestera_rif;
 struct prestera_trap_data;
@@ -356,11 +359,10 @@ struct prestera_switch {
 	struct prestera_storm_control *storm_control;
 	struct prestera_acl *acl;
 	struct prestera_span *span;
-	struct prestera_bridge *bridge;
-	struct prestera_switchdev *switchdev;
+	struct prestera_switchdev *swdev;
 	struct prestera_router *router;
 	struct prestera_lag *lags;
-	struct notifier_block netdevice_nb;
+	struct notifier_block netdev_nb;
 	struct device_node *np;
 	struct prestera_trap_data *trap_data;
 	struct prestera_rxtx *rxtx;
@@ -371,6 +373,7 @@ struct prestera_router {
 	struct prestera_switch *sw;
 	struct list_head rif_list;	/* list of mvsw_pr_rif */
 	struct list_head vr_list;	/* list of mvsw_pr_vr */
+	struct list_head rif_entry_list;
 	struct rhashtable nh_neigh_ht;
 	struct rhashtable nexthop_group_ht;
 	struct rhashtable fib_ht;
@@ -389,16 +392,16 @@ struct prestera_router {
 };
 
 enum prestera_fdb_flush_mode {
-	MVSW_PR_FDB_FLUSH_MODE_DYNAMIC = BIT(0),
-	MVSW_PR_FDB_FLUSH_MODE_STATIC = BIT(1),
-	MVSW_PR_FDB_FLUSH_MODE_ALL = MVSW_PR_FDB_FLUSH_MODE_DYNAMIC
-				   | MVSW_PR_FDB_FLUSH_MODE_STATIC,
+	PRESTERA_FDB_FLUSH_MODE_DYNAMIC = BIT(0),
+	PRESTERA_FDB_FLUSH_MODE_STATIC = BIT(1),
+	PRESTERA_FDB_FLUSH_MODE_ALL = PRESTERA_FDB_FLUSH_MODE_DYNAMIC
+				    | PRESTERA_FDB_FLUSH_MODE_STATIC,
 };
 
 struct prestera_ip_addr {
 	enum {
-		MVSW_PR_IPV4 = 0,
-		MVSW_PR_IPV6
+		PRESTERA_IPV4 = 0,
+		PRESTERA_IPV6
 	} v;
 	union {
 		__be32 ipv4;
@@ -443,14 +446,14 @@ struct prestera_acl_match {
 };
 
 enum prestera_acl_rule_action {
-	MVSW_ACL_RULE_ACTION_ACCEPT,
-	MVSW_ACL_RULE_ACTION_DROP,
-	MVSW_ACL_RULE_ACTION_TRAP,
-	MVSW_ACL_RULE_ACTION_POLICE,
-	MVSW_ACL_RULE_ACTION_NAT,
-	MVSW_ACL_RULE_ACTION_JUMP,
-	MVSW_ACL_RULE_ACTION_NH,
-	MVSW_ACL_RULE_ACTION_COUNT
+	PRESTERA_ACL_RULE_ACTION_ACCEPT,
+	PRESTERA_ACL_RULE_ACTION_DROP,
+	PRESTERA_ACL_RULE_ACTION_TRAP,
+	PRESTERA_ACL_RULE_ACTION_POLICE,
+	PRESTERA_ACL_RULE_ACTION_NAT,
+	PRESTERA_ACL_RULE_ACTION_JUMP,
+	PRESTERA_ACL_RULE_ACTION_NH,
+	PRESTERA_ACL_RULE_ACTION_COUNT
 };
 
 struct prestera_acl_action_jump {
@@ -491,32 +494,20 @@ struct prestera_acl_hw_action_info {
 	};
 };
 
-struct prestera_fib_key {
-	struct prestera_ip_addr addr;
-	u32 prefix_len;
-	u32 tb_id;
-};
-
-struct prestera_fib_info {
-	struct mvsw_pr_vr *vr;
-	struct list_head vr_node;
-	enum mvsw_pr_fib_type {
-		MVSW_PR_FIB_TYPE_INVALID = 0,
-		/* must be pointer to nh_grp id */
-		MVSW_PR_FIB_TYPE_UC_NH,
-		/* It can be connected route
-		 * and will be overlapped with neighbours
-		 */
-		MVSW_PR_FIB_TYPE_TRAP,
-		MVSW_PR_FIB_TYPE_DROP
-	} type;
-	/* Valid only if type = UC_NH*/
-	struct mvsw_pr_nexthop_group *nh_grp;
-};
-
 struct prestera_nh_neigh_key {
 	struct prestera_ip_addr addr;
-	struct prestera_rif *rif;
+	/* Seems like rif is obsolete, because there is iface in info ?
+	 * Key can contain functional fields, or fields, which is used to
+	 * filter duplicate objects on logical level (before you pass it to
+	 * HW)... also key can be used to cover hardware restrictions.
+	 * In our case rif - is logical interface (even can be VLAN), which
+	 * is used in combination with IP address (which is also not related to
+	 * hardware nexthop) to provide logical compression of created nexthops.
+	 * You even can imagine, that rif+IPaddr is just cookie.
+	 */
+	/* struct prestera_rif *rif; */
+	/* Use just as cookie, to divide ARP domains (in order with addr) */
+	void *rif;
 };
 
 /* Used to notify nh about neigh change */
@@ -534,8 +525,6 @@ struct prestera_nexthop_group_key {
 
 struct prestera_port *dev_to_prestera_port(struct device *dev);
 
-int prestera_switch_ageing_set(struct prestera_switch *sw, u32 ageing_time);
-
 struct prestera_port *prestera_port_find_by_fp_id(u32 fp_id);
 
 int prestera_port_learning_set(struct prestera_port *port, bool learn_enable);
@@ -551,31 +540,11 @@ void prestera_port_vlan_destroy(struct prestera_port_vlan *mvsw_pr_port_vlan);
 int prestera_port_vlan_set(struct prestera_port *port, u16 vid,
 			   bool is_member, bool untagged);
 
-struct prestera_bridge_device *
-prestera_bridge_device_find(const struct prestera_bridge *bridge,
+struct prestera_bridge *
+prestera_bridge_device_find(const struct prestera_switch *sw,
 			    const struct net_device *br_dev);
-u16 prestera_vlan_dev_vlan_id(struct prestera_bridge *bridge,
+u16 prestera_vlan_dev_vlan_id(struct prestera_switch *sw,
 			      struct net_device *dev);
-int prestera_8021d_bridge_create(struct prestera_switch *sw, u16 *bridge_id);
-int prestera_8021d_bridge_delete(struct prestera_switch *sw, u16 bridge_id);
-int prestera_8021d_bridge_port_add(struct prestera_port *port, u16 bridge_id);
-int prestera_8021d_bridge_port_delete(struct prestera_port *port,
-				      u16 bridge_id);
-
-int prestera_fdb_add(struct prestera_port *port, const unsigned char *mac,
-		     u16 vid, bool dynamic);
-int prestera_fdb_del(struct prestera_port *port, const unsigned char *mac,
-		     u16 vid);
-int prestera_fdb_flush_vlan(struct prestera_switch *sw, u16 vid,
-			    enum prestera_fdb_flush_mode mode);
-int prestera_fdb_flush_port_vlan(struct prestera_port *port, u16 vid,
-				 enum prestera_fdb_flush_mode mode);
-int prestera_fdb_flush_port(struct prestera_port *port,
-			    enum prestera_fdb_flush_mode mode);
-int prestera_macvlan_add(const struct prestera_switch *sw, u16 vr_id,
-			 const u8 *mac, u16 vid);
-int prestera_macvlan_del(const struct prestera_switch *sw, u16 vr_id,
-			 const u8 *mac, u16 vid);
 
 int prestera_lag_member_add(struct prestera_port *port,
 			    struct net_device *lag_dev, u16 lag_id);
@@ -675,8 +644,6 @@ int prestera_router_init(struct prestera_switch *sw);
 void prestera_router_fini(struct prestera_switch *sw);
 int prestera_netdevice_router_port_event(struct net_device *dev,
 					 unsigned long event, void *ptr);
-int prestera_inetaddr_valid_event(struct notifier_block *unused,
-				  unsigned long event, void *ptr);
 int prestera_netdevice_vrf_event(struct net_device *dev, unsigned long event,
 				 struct netdev_notifier_changeupper_info *info);
 void prestera_port_router_leave(struct prestera_port *port);
@@ -716,8 +683,8 @@ void prestera_router_lag_member_leave(const struct prestera_port *port,
 void prestera_lag_router_leave(struct prestera_switch *sw,
 			       struct net_device *lag_dev);
 
-void prestera_bridge_device_rifs_destroy(struct prestera_switch *sw,
-					 struct net_device *bridge_dev);
+void prestera_bridge_rifs_destroy(struct prestera_switch *sw,
+				  struct net_device *bridge_dev);
 void prestera_k_arb_fdb_evt(struct prestera_switch *sw, struct net_device *dev);
 struct prestera_neigh_info *
 prestera_kern_neigh_cache_to_neigh_info(struct prestera_kern_neigh_cache *nc);
