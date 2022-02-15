@@ -11,6 +11,7 @@ Features by Linux kernel version
 | 5.13 | Support for 98DX3265 |
 | 5.14 | Add support for [LAG](../../wiki/link-aggregation-(lag)), [Devlink traps](../../wiki/Devlink), [ACL](../../wiki/ACL)|
 | 5.17 | Migrate to new vTCAM api, ACL stats support, [flower template support](../../wiki/Chain-Support#chain-template-support), CPU routing |
+| 5.18 | [Multi chain support](../../wiki/Chain-Support) |
 
 Features by driver version
 
