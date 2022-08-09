@@ -6,6 +6,7 @@
 
 #include "prestera.h"
 #include "prestera_hw.h"
+#include "prestera_flower.h"
 
 static int prestera_mall_rule_add(struct prestera_flow_block_binding *binding,
 				  struct prestera_port *to_port)
@@ -119,6 +120,8 @@ int prestera_mall_replace(struct prestera_flow_block *block,
 	port = netdev_priv(act->dev);
 	list_for_each_entry(binding, &block->binding_list, list) {
 		err = prestera_mall_rule_add(binding, port);
+		if (err == -EEXIST)
+			return err;
 		if (err)
 			goto rollback;
 	}

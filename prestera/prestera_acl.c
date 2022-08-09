@@ -32,11 +32,7 @@ struct prestera_acl_ruleset {
 	u32 vtcam_id;
 	u16 pcl_id;
 	u32 index;
-};
-
-struct prestera_acl_uid_entry {
-	struct list_head list;
-	u8 id;
+	bool ingress;
 };
 
 struct prestera_acl_vtcam {
@@ -44,6 +40,7 @@ struct prestera_acl_vtcam {
 	__be32 keymask[__PRESTERA_ACL_RULE_MATCH_TYPE_MAX];
 	bool is_keymask_set;
 	refcount_t refcount;
+	u8 direction;
 	u8 lookup;
 	u32 id;
 };
@@ -76,18 +73,28 @@ static const struct rhashtable_params __prestera_acl_rule_entry_ht_params = {
 	.automatic_shrinking = true,
 };
 
-enum prestera_counter_client prestera_acl_chain_to_client(u32 chain_index)
+int prestera_acl_chain_to_client(u32 chain_index, bool ingress, u32 *client)
 {
-	enum prestera_counter_client client[] = {
-		PRESTERA_COUNTER_CLIENT_LOOKUP_0,
-		PRESTERA_COUNTER_CLIENT_LOOKUP_1,
-		PRESTERA_COUNTER_CLIENT_LOOKUP_2
+	u32 ingress_client_map[] = {
+		PRESTERA_HW_COUNTER_CLIENT_INGRESS_LOOKUP_0,
+		PRESTERA_HW_COUNTER_CLIENT_INGRESS_LOOKUP_1,
+		PRESTERA_HW_COUNTER_CLIENT_INGRESS_LOOKUP_2
 	};
 
-	if (chain_index > 2)
-		return PRESTERA_COUNTER_CLIENT_LOOKUP_LAST;
+	if (!ingress) {
+		/* prestera supports only one chain on egress */
+		if (chain_index > 0)
+			return -EINVAL;
 
-	return client[chain_index];
+		*client = PRESTERA_HW_COUNTER_CLIENT_EGRESS_LOOKUP;
+		return 0;
+	}
+
+	if (chain_index >= ARRAY_SIZE(ingress_client_map))
+		return -EINVAL;
+
+	*client = ingress_client_map[chain_index];
+	return 0;
 }
 
 struct prestera_acl_nat_port *
@@ -141,8 +148,12 @@ prestera_acl_nat_port_create(struct prestera_acl *acl,
 	return nat_port;
 }
 
-static inline bool prestera_acl_chain_is_supported(u32 chain_index)
+static bool prestera_acl_chain_is_supported(u32 chain_index, bool ingress)
 {
+	if (!ingress)
+		/* prestera supports only one chain on egress */
+		return chain_index == 0;
+
 	return (chain_index & ~PRESTERA_ACL_CHAIN_MASK) == 0;
 }
 
@@ -152,10 +163,10 @@ prestera_acl_ruleset_create(struct prestera_acl *acl,
 			    u32 chain_index)
 {
 	struct prestera_acl_ruleset *ruleset;
+	u32 uid = 0;
 	int err;
-	u8 uid;
 
-	if (!prestera_acl_chain_is_supported(chain_index))
+	if (!prestera_acl_chain_is_supported(chain_index, block->ingress))
 		return ERR_PTR(-EINVAL);
 
 	ruleset = kzalloc(sizeof(*ruleset), GFP_KERNEL);
@@ -163,6 +174,7 @@ prestera_acl_ruleset_create(struct prestera_acl *acl,
 		return ERR_PTR(-ENOMEM);
 
 	ruleset->acl = acl;
+	ruleset->ingress = block->ingress;
 	ruleset->ht_key.block = block;
 	ruleset->ht_key.chain_index = chain_index;
 	refcount_set(&ruleset->refcount, 1);
@@ -171,12 +183,12 @@ prestera_acl_ruleset_create(struct prestera_acl *acl,
 	if (err)
 		goto err_rhashtable_init;
 
-	err = prestera_acl_uid_new_get(acl, &uid);
+	err = idr_alloc_u32(&acl->uid, NULL, &uid, U8_MAX, GFP_KERNEL);
 	if (err)
 		goto err_ruleset_create;
 
 	/* make pcl-id based on uid and chain */
-	ruleset->pcl_id = PRESTERA_ACL_PCL_ID_MAKE(uid, chain_index);
+	ruleset->pcl_id = PRESTERA_ACL_PCL_ID_MAKE((u8)uid, chain_index);
 	ruleset->index = uid;
 
 	err = rhashtable_insert_fast(&acl->ruleset_ht, &ruleset->ht_node,
@@ -187,7 +199,7 @@ prestera_acl_ruleset_create(struct prestera_acl *acl,
 	return ruleset;
 
 err_ruleset_ht_insert:
-	prestera_acl_uid_release(acl, uid);
+	idr_remove(&acl->uid, uid);
 err_ruleset_create:
 	rhashtable_destroy(&ruleset->rule_ht);
 err_rhashtable_init:
@@ -195,35 +207,28 @@ err_rhashtable_init:
 	return ERR_PTR(err);
 }
 
-int prestera_acl_ruleset_keymask_set(struct prestera_acl_ruleset *ruleset,
-				     void *keymask)
+void prestera_acl_ruleset_keymask_set(struct prestera_acl_ruleset *ruleset,
+				      void *keymask)
 {
-	void *__keymask;
-
-	if (!keymask || !ruleset)
-		return -EINVAL;
-
-	__keymask = kmalloc(ACL_KEYMASK_SIZE, GFP_KERNEL);
-	if (!__keymask)
-		return -ENOMEM;
-
-	memcpy(__keymask, keymask, ACL_KEYMASK_SIZE);
-	ruleset->keymask = __keymask;
-
-	return 0;
+	ruleset->keymask = kmemdup(keymask, ACL_KEYMASK_SIZE, GFP_KERNEL);
 }
 
 int prestera_acl_ruleset_offload(struct prestera_acl_ruleset *ruleset)
 {
 	struct prestera_acl_iface iface;
 	u32 vtcam_id;
+	int dir;
 	int err;
+
+	dir = ruleset->ingress ?
+		PRESTERA_HW_VTCAM_DIR_INGRESS : PRESTERA_HW_VTCAM_DIR_EGRESS;
 
 	if (ruleset->offload)
 		return -EEXIST;
 
 	err = prestera_acl_vtcam_id_get(ruleset->acl,
 					ruleset->ht_key.chain_index,
+					dir,
 					ruleset->keymask, &vtcam_id);
 	if (err)
 		goto err_vtcam_create;
@@ -272,8 +277,7 @@ static void prestera_acl_ruleset_destroy(struct prestera_acl_ruleset *ruleset)
 		WARN_ON(prestera_acl_vtcam_id_put(acl, ruleset->vtcam_id));
 	}
 
-	WARN_ON(prestera_acl_uid_release(acl, uid));
-
+	idr_remove(&acl->uid, uid);
 	rhashtable_destroy(&ruleset->rule_ht);
 	kfree(ruleset->keymask);
 	kfree(ruleset);
@@ -408,23 +412,6 @@ void prestera_acl_block_prio_update(struct prestera_switch *sw,
 unsigned int prestera_acl_block_rule_count(struct prestera_flow_block *block)
 {
 	return block ? block->rule_count : 0;
-}
-
-void prestera_acl_block_disable_inc(struct prestera_flow_block *block)
-{
-	if (block)
-		block->disable_count++;
-}
-
-void prestera_acl_block_disable_dec(struct prestera_flow_block *block)
-{
-	if (block)
-		block->disable_count--;
-}
-
-bool prestera_acl_block_disabled(const struct prestera_flow_block *block)
-{
-	return block->disable_count;
 }
 
 void
@@ -579,15 +566,6 @@ int prestera_acl_rule_add(struct prestera_switch *sw,
 	prestera_acl_rule_keymask_pcl_id_set(rule, ruleset->pcl_id);
 	rule->re_arg.vtcam_id = ruleset->vtcam_id;
 	rule->re_key.prio = rule->priority;
-
-	/* setup counter */
-	rule->re_arg.count.valid = true;
-	rule->re_arg.count.client =
-		prestera_acl_chain_to_client(ruleset->ht_key.chain_index);
-	if (rule->re_arg.count.client == PRESTERA_COUNTER_CLIENT_LOOKUP_LAST) {
-		err = -EINVAL;
-		goto err_rule_add;
-	}
 
 	if (rule_flag_test(rule, CT)) {
 		err = prestera_ct_ft_offload_add_cb(sw, rule);
@@ -852,11 +830,8 @@ struct prestera_acl_rule_entry *
 prestera_acl_rule_entry_find(struct prestera_acl *acl,
 			     struct prestera_acl_rule_entry_key *key)
 {
-	struct prestera_acl_rule_entry *e;
-
-	e = rhashtable_lookup_fast(&acl->acl_rule_entry_ht, key,
-				   __prestera_acl_rule_entry_ht_params);
-	return IS_ERR(e) ? NULL : e;
+	return rhashtable_lookup_fast(&acl->acl_rule_entry_ht, key,
+				      __prestera_acl_rule_entry_ht_params);
 }
 
 static int __prestera_acl_rule_entry2hw_del(struct prestera_switch *sw,
@@ -918,6 +893,12 @@ static int __prestera_acl_rule_entry2hw_add(struct prestera_switch *sw,
 	if (e->counter.block) {
 		act_hw[act_num].id = PRESTERA_ACL_RULE_ACTION_COUNT;
 		act_hw[act_num].count.id = e->counter.id;
+		act_num++;
+	}
+	/* egress remark */
+	if (e->remark.valid) {
+		act_hw[act_num].id = PRESTERA_ACL_RULE_ACTION_REMARK;
+		act_hw[act_num].remark = e->remark.i;
 		act_num++;
 	}
 
@@ -991,9 +972,12 @@ __prestera_acl_rule_entry_act_construct(struct prestera_switch *sw,
 		err = prestera_counter_get(sw->counter, arg->count.client,
 					   &e->counter.block,
 					   &e->counter.id);
-		if (err && arg->count.fail_on_err)
+		if (err)
 			goto err_out;
 	}
+	/* remark */
+	e->remark.valid = arg->remark.valid;
+	e->remark.i = arg->remark.i;
 
 	return 0;
 
@@ -1044,56 +1028,6 @@ err_kzalloc:
 	return NULL;
 }
 
-int prestera_acl_uid_new_get(struct prestera_acl *acl, u8 *uid)
-{
-	struct prestera_acl_uid_entry *uid_entry;
-
-	uid_entry = list_first_entry_or_null(&acl->uid.free_list,
-					     typeof(*uid_entry), list);
-	if (uid_entry) {
-		list_del(&uid_entry->list);
-		*uid = uid_entry->id;
-		kfree(uid_entry);
-		return 0;
-	}
-
-	if (!(acl->uid.next + 1))
-		/* max number reached */
-		return -ENOENT;
-
-	*uid = acl->uid.next++;
-	return 0;
-}
-
-int prestera_acl_uid_release(struct prestera_acl *acl, u8 id)
-{
-	struct prestera_acl_uid_entry *uid_entry;
-
-	if (!(id < acl->uid.next))
-		return -EINVAL;
-
-	uid_entry = kmalloc(sizeof(*uid_entry), GFP_KERNEL);
-	if (!uid_entry)
-		return -ENOMEM;
-
-	uid_entry->id = id;
-	list_add_rcu(&uid_entry->list, &acl->uid.free_list);
-
-	return 0;
-}
-
-static void prestera_acl_uid_destroy(struct prestera_acl *acl)
-{
-	struct prestera_acl_uid_entry *uid_entry;
-	struct list_head *pos, *n;
-
-	list_for_each_safe(pos, n, &acl->uid.free_list) {
-		uid_entry = list_entry(pos, typeof(*uid_entry), list);
-		list_del(&uid_entry->list);
-		kfree(uid_entry);
-	}
-}
-
 static int __prestera_acl_vtcam_id_try_fit(struct prestera_acl *acl, u8 lookup,
 					   void *keymask, u32 *vtcam_id)
 {
@@ -1137,7 +1071,7 @@ vtcam_found:
 	return 0;
 }
 
-int prestera_acl_vtcam_id_get(struct prestera_acl *acl, u8 lookup,
+int prestera_acl_vtcam_id_get(struct prestera_acl *acl, u8 lookup, u8 dir,
 			      void *keymask, u32 *vtcam_id)
 {
 	struct prestera_acl_vtcam *vtcam;
@@ -1149,7 +1083,8 @@ int prestera_acl_vtcam_id_get(struct prestera_acl *acl, u8 lookup,
 	 * fine for now
 	 */
 	list_for_each_entry(vtcam, &acl->vtcam_list, list) {
-		if (lookup != vtcam->lookup)
+		if (lookup != vtcam->lookup ||
+		    dir != vtcam->direction)
 			continue;
 
 		if (!keymask && !vtcam->is_keymask_set) {
@@ -1170,7 +1105,7 @@ int prestera_acl_vtcam_id_get(struct prestera_acl *acl, u8 lookup,
 		return -ENOMEM;
 
 	err = prestera_hw_vtcam_create(acl->sw, lookup, keymask, &new_vtcam_id,
-				       PRESTERA_HW_VTCAM_DIR_INGRESS);
+				       dir);
 	if (err) {
 		kfree(vtcam);
 
@@ -1183,6 +1118,7 @@ int prestera_acl_vtcam_id_get(struct prestera_acl *acl, u8 lookup,
 		return 0;
 	}
 
+	vtcam->direction = dir;
 	vtcam->id = new_vtcam_id;
 	vtcam->lookup = lookup;
 	if (keymask) {
@@ -1236,7 +1172,7 @@ int prestera_acl_init(struct prestera_switch *sw)
 	INIT_LIST_HEAD(&acl->rules);
 	INIT_LIST_HEAD(&acl->nat_port_list);
 	INIT_LIST_HEAD(&acl->vtcam_list);
-	INIT_LIST_HEAD(&acl->uid.free_list);
+	idr_init(&acl->uid);
 
 	err = rhashtable_init(&acl->acl_rule_entry_ht,
 			      &__prestera_acl_rule_entry_ht_params);
@@ -1279,7 +1215,9 @@ void prestera_acl_fini(struct prestera_switch *sw)
 	struct prestera_acl *acl = sw->acl;
 
 	prestera_ct_clean(acl->ct_priv);
-	prestera_acl_uid_destroy(acl);
+
+	WARN_ON(!idr_is_empty(&acl->uid));
+	idr_destroy(&acl->uid);
 
 	WARN_ON(!list_empty(&acl->vtcam_list));
 	WARN_ON(!list_empty(&acl->nat_port_list));

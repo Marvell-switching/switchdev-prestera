@@ -115,6 +115,10 @@ struct prestera_acl_rule_entry {
 			u32 id;
 			struct prestera_counter_block *block;
 		} counter;
+		struct {
+			u8 valid:1;
+			struct prestera_acl_action_remark i;
+		} remark;
 	};
 };
 
@@ -149,9 +153,13 @@ struct prestera_acl_rule_entry_arg {
 			struct prestera_nh_mangle_entry_key k; /* key */
 		} nh;
 		struct {
-			u8 valid:1, fail_on_err:1;
-			enum prestera_counter_client client;
+			u8 valid:1;
+			u32 client;
 		} count;
+		struct {
+			u8 valid:1;
+			struct prestera_acl_action_remark i;
+		} remark;
 	};
 };
 
@@ -176,10 +184,7 @@ struct prestera_acl {
 	/* TODO: move nh_mangle_entry_ht to router ? */
 	struct rhashtable nh_mangle_entry_ht;
 	struct prestera_ct_priv *ct_priv;
-	struct {
-		struct list_head free_list;
-		u8 next;
-	} uid;
+	struct idr uid;
 };
 
 struct prestera_acl_nat_port {
@@ -260,7 +265,6 @@ struct prestera_acl_rule_entry *
 prestera_acl_rule_entry_create(struct prestera_acl *acl,
 			       struct prestera_acl_rule_entry_key *key,
 			       struct prestera_acl_rule_entry_arg *arg);
-enum prestera_counter_client prestera_acl_chain_to_client(u32 chain_index);
 struct prestera_acl_ruleset *
 prestera_acl_ruleset_get(struct prestera_acl *acl,
 			 struct prestera_flow_block *block,
@@ -269,8 +273,8 @@ struct prestera_acl_ruleset *
 prestera_acl_ruleset_lookup(struct prestera_acl *acl,
 			    struct prestera_flow_block *block,
 			    u32 chain_index);
-int prestera_acl_ruleset_keymask_set(struct prestera_acl_ruleset *ruleset,
-				     void *keymask);
+void prestera_acl_ruleset_keymask_set(struct prestera_acl_ruleset *ruleset,
+				      void *keymask);
 int prestera_acl_ruleset_offload(struct prestera_acl_ruleset *ruleset);
 u32 prestera_acl_ruleset_index_get(const struct prestera_acl_ruleset *ruleset);
 bool prestera_acl_ruleset_is_offload(struct prestera_acl_ruleset *ruleset);
@@ -282,12 +286,9 @@ int prestera_acl_ruleset_unbind(struct prestera_acl_ruleset *ruleset,
 void
 prestera_acl_rule_keymask_pcl_id_set(struct prestera_acl_rule *rule,
 				     u16 pcl_id);
-
-int prestera_acl_uid_new_get(struct prestera_acl *acl, u8 *uid);
-int prestera_acl_uid_release(struct prestera_acl *acl, u8 uid);
-
-int prestera_acl_vtcam_id_get(struct prestera_acl *acl, u8 lookup,
+int prestera_acl_vtcam_id_get(struct prestera_acl *acl, u8 lookup, u8 dir,
 			      void *keymask, u32 *vtcam_id);
 int prestera_acl_vtcam_id_put(struct prestera_acl *acl, u32 vtcam_id);
+int prestera_acl_chain_to_client(u32 chain_index, bool ingress, u32 *client);
 
 #endif /* _PRESTERA_ACL_H_ */

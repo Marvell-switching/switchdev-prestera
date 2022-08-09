@@ -26,7 +26,7 @@ struct prestera_counter_block {
 	u32 id;
 	u32 offset;
 	u32 num_counters;
-	enum prestera_counter_client client;
+	u32 client;
 	struct idr counter_idr;
 	bool full;
 	bool is_updating;
@@ -41,7 +41,7 @@ enum {
 	COUNTER_FLAG_INVALID = 1
 };
 
-static inline bool
+static bool
 prestera_counter_is_ready(struct prestera_counter_block *block, u32 id)
 {
 	return block->counter_flag[id - block->offset] == COUNTER_FLAG_READY;
@@ -87,7 +87,7 @@ static void prestera_counter_stats_clear(struct prestera_counter_block *block,
 
 static struct prestera_counter_block *
 prestera_counter_block_lookup_not_full(struct prestera_counter *counter,
-				       enum prestera_counter_client client)
+				       u32 client)
 {
 	u32 i;
 
@@ -139,7 +139,7 @@ static int prestera_counter_block_list_add(struct prestera_counter *counter,
 
 static struct prestera_counter_block *
 prestera_counter_block_get(struct prestera_counter *counter,
-			   enum prestera_counter_client client)
+			   u32 client)
 {
 	struct prestera_counter_block *block;
 	int err;
@@ -248,8 +248,7 @@ static int prestera_counter_get_vacant(struct prestera_counter_block *block,
 	return 0;
 }
 
-int prestera_counter_get(struct prestera_counter *counter,
-			 enum prestera_counter_client client,
+int prestera_counter_get(struct prestera_counter *counter, u32 client,
 			 struct prestera_counter_block **bl, u32 *counter_id)
 {
 	struct prestera_counter_block *block;

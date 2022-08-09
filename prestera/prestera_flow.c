@@ -7,6 +7,7 @@
 
 #include "prestera.h"
 #include "prestera_acl.h"
+#include "prestera_flower.h"
 
 static LIST_HEAD(prestera_block_cb_list);
 
@@ -32,20 +33,18 @@ static int prestera_flow_block_mall_cb(struct prestera_flow_block *block,
 static int prestera_flow_block_flower_cb(struct prestera_flow_block *block,
 					 struct flow_cls_offload *f)
 {
-	struct prestera_switch *sw = prestera_acl_block_sw(block);
-
 	switch (f->command) {
 	case FLOW_CLS_REPLACE:
-		return prestera_flower_replace(sw, block, f);
+		return prestera_flower_replace(block, f);
 	case FLOW_CLS_DESTROY:
-		prestera_flower_destroy(sw, block, f);
+		prestera_flower_destroy(block, f);
 		return 0;
 	case FLOW_CLS_STATS:
-		return prestera_flower_stats(sw, block, f);
+		return prestera_flower_stats(block, f);
 	case FLOW_CLS_TMPLT_CREATE:
-		return prestera_flower_tmplt_create(sw, block, f);
+		return prestera_flower_tmplt_create(block, f);
 	case FLOW_CLS_TMPLT_DESTROY:
-		prestera_flower_tmplt_destroy(sw, block, f);
+		prestera_flower_tmplt_destroy(block, f);
 		return 0;
 	default:
 		return -EOPNOTSUPP;
@@ -56,9 +55,6 @@ static int prestera_flow_block_cb(enum tc_setup_type type,
 				  void *type_data, void *cb_priv)
 {
 	struct prestera_flow_block *block = cb_priv;
-
-	if (prestera_acl_block_disabled(block))
-		return -EOPNOTSUPP;
 
 	switch (type) {
 	case TC_SETUP_CLSFLOWER:
@@ -89,7 +85,7 @@ static void prestera_flow_block_release(void *cb_priv)
 	prestera_flow_block_destroy(block);
 }
 
-static inline bool
+static bool
 prestera_flow_block_is_bound(const struct prestera_flow_block *block)
 {
 	return block->ruleset_zero;
@@ -154,7 +150,9 @@ static int prestera_flow_block_unbind(struct prestera_flow_block *block,
 }
 
 static struct prestera_flow_block *
-prestera_flow_block_create(struct prestera_switch *sw, struct net *net)
+prestera_flow_block_create(struct prestera_switch *sw,
+			   struct net *net,
+			   bool ingress)
 {
 	struct prestera_flow_block *block;
 
@@ -168,6 +166,7 @@ prestera_flow_block_create(struct prestera_switch *sw, struct net *net)
 	block->sw = sw;
 	block->mall_prio = UINT_MAX;
 	block->flower_min_prio = UINT_MAX;
+	block->ingress = ingress;
 
 	return block;
 }
@@ -175,7 +174,8 @@ prestera_flow_block_create(struct prestera_switch *sw, struct net *net)
 static struct prestera_flow_block *
 prestera_flow_block_get(struct prestera_switch *sw,
 			struct flow_block_offload *f,
-			bool *register_block)
+			bool *register_block,
+			bool ingress)
 {
 	struct prestera_flow_block *block;
 	struct flow_block_cb *block_cb;
@@ -183,7 +183,7 @@ prestera_flow_block_get(struct prestera_switch *sw,
 	block_cb = flow_block_cb_lookup(f->block,
 					prestera_flow_block_cb, sw);
 	if (!block_cb) {
-		block = prestera_flow_block_create(sw, f->net);
+		block = prestera_flow_block_create(sw, f->net, ingress);
 		if (!block)
 			return ERR_PTR(-ENOMEM);
 
@@ -219,29 +219,19 @@ static void prestera_flow_block_put(struct prestera_flow_block *block)
 }
 
 static int prestera_setup_tc_block_bind(struct prestera_port *port,
-					struct flow_block_offload *f)
+					struct flow_block_offload *f, bool ingress)
 {
 	struct prestera_switch *sw = port->sw;
 	struct prestera_flow_block *block;
 	struct flow_block_cb *block_cb;
-	bool disable_block = false;
 	bool register_block;
 	int err;
 
-	block = prestera_flow_block_get(sw, f, &register_block);
+	block = prestera_flow_block_get(sw, f, &register_block, ingress);
 	if (IS_ERR(block))
 		return PTR_ERR(block);
 
 	block_cb = block->block_cb;
-
-	if (!tc_can_offload(port->net_dev)) {
-		if (prestera_acl_block_rule_count(block)) {
-			err = -EOPNOTSUPP;
-			goto err_block_bind;
-		}
-
-		disable_block = true;
-	}
 
 	err = prestera_flow_block_bind(block, port);
 	if (err)
@@ -252,10 +242,11 @@ static int prestera_setup_tc_block_bind(struct prestera_port *port,
 		list_add_tail(&block_cb->driver_list, &prestera_block_cb_list);
 	}
 
-	if (disable_block)
-		prestera_acl_block_disable_inc(block);
+	if (ingress)
+		port->ingress_flow_block = block;
+	else
+		port->egress_flow_block = block;
 
-	port->flow_block = block;
 	return 0;
 
 err_block_bind:
@@ -264,7 +255,7 @@ err_block_bind:
 }
 
 static void prestera_setup_tc_block_unbind(struct prestera_port *port,
-					   struct flow_block_offload *f)
+					   struct flow_block_offload *f, bool ingress)
 {
 	struct prestera_switch *sw = port->sw;
 	struct prestera_flow_block *block;
@@ -276,9 +267,6 @@ static void prestera_setup_tc_block_unbind(struct prestera_port *port,
 		return;
 
 	block = flow_block_cb_priv(block_cb);
-
-	if (!tc_can_offload(port->net_dev))
-		prestera_acl_block_disable_dec(block);
 
 	prestera_mall_destroy(block);
 
@@ -292,25 +280,38 @@ static void prestera_setup_tc_block_unbind(struct prestera_port *port,
 	}
 
 err_flow_block_unbind:
-	port->flow_block = NULL;
+	if (ingress)
+		port->ingress_flow_block = NULL;
+	else
+		port->egress_flow_block = NULL;
 }
 
-int prestera_setup_tc_block(struct prestera_port *port,
-			    struct flow_block_offload *f)
+static int prestera_setup_tc_block_clsact(struct prestera_port *port,
+					  struct flow_block_offload *f,
+					  bool ingress)
 {
-	if (f->binder_type != FLOW_BLOCK_BINDER_TYPE_CLSACT_INGRESS)
-		return -EOPNOTSUPP;
-
 	f->driver_block_list = &prestera_block_cb_list;
 
 	switch (f->command) {
 	case FLOW_BLOCK_BIND:
-		return prestera_setup_tc_block_bind(port, f);
+		return prestera_setup_tc_block_bind(port, f, ingress);
 	case FLOW_BLOCK_UNBIND:
-		prestera_setup_tc_block_unbind(port, f);
+		prestera_setup_tc_block_unbind(port, f, ingress);
 		return 0;
 	default:
 		return -EOPNOTSUPP;
 	}
 }
 
+int prestera_setup_tc_block(struct prestera_port *port,
+			    struct flow_block_offload *f)
+{
+	switch (f->binder_type) {
+	case FLOW_BLOCK_BINDER_TYPE_CLSACT_INGRESS:
+		return prestera_setup_tc_block_clsact(port, f, true);
+	case FLOW_BLOCK_BINDER_TYPE_CLSACT_EGRESS:
+		return prestera_setup_tc_block_clsact(port, f, false);
+	default:
+		return -EOPNOTSUPP;
+	}
+}

@@ -35,8 +35,8 @@ static ssize_t mvsw_pr_fw_log_debugfs_read(struct file *file,
 static ssize_t mvsw_pr_fw_log_debugfs_write(struct file *file,
 					    const char __user *ubuf,
 					    size_t count, loff_t *ppos);
-static inline int mvsw_pr_fw_log_get_type_from_str(const char *str);
-static inline int mvsw_pr_fw_log_get_lib_from_str(const char *str);
+static int mvsw_pr_fw_log_get_type_from_str(const char *str);
+static int mvsw_pr_fw_log_get_lib_from_str(const char *str);
 
 static int mvsw_pr_fw_log_event_handler_register(struct prestera_switch *sw);
 static void mvsw_pr_fw_log_event_handler_unregister(struct prestera_switch *sw);
@@ -334,7 +334,7 @@ error:
 	return err;
 }
 
-static inline int mvsw_pr_fw_log_get_type_from_str(const char *str)
+static int mvsw_pr_fw_log_get_type_from_str(const char *str)
 {
 	int i;
 
@@ -349,7 +349,7 @@ static inline int mvsw_pr_fw_log_get_type_from_str(const char *str)
 	return PRESTERA_FW_LOG_TYPE_MAX;
 }
 
-static inline int mvsw_pr_fw_log_get_lib_from_str(const char *str)
+static int mvsw_pr_fw_log_get_lib_from_str(const char *str)
 {
 	int i;
 

@@ -512,11 +512,12 @@ static const struct devlink_ops prestera_dl_ops = {
 	.trap_drop_counter_get = prestera_drop_counter_get,
 };
 
-struct prestera_switch *prestera_devlink_alloc(void)
+struct prestera_switch *prestera_devlink_alloc(struct prestera_device *dev)
 {
 	struct devlink *dl;
 
-	dl = devlink_alloc(&prestera_dl_ops, sizeof(struct prestera_switch));
+	dl = devlink_alloc(&prestera_dl_ops, sizeof(struct prestera_switch),
+			   dev->dev);
 
 	return devlink_priv(dl);
 }
@@ -533,7 +534,7 @@ int prestera_devlink_register(struct prestera_switch *sw)
 	struct devlink *dl = priv_to_devlink(sw);
 	int err;
 
-	err = devlink_register(dl, sw->dev->dev);
+	err = devlink_register(dl);
 	if (err) {
 		dev_err(sw->dev->dev, "devlink_register failed: %d\n", err);
 		return err;

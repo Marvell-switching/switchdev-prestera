@@ -109,6 +109,7 @@ struct mvsw_pr_rxtx_sdma {
 	spinlock_t tx_lock;
 	u32 map_addr;
 	u64 dma_mask;
+	gfp_t dma_flags;
 };
 
 struct prestera_rxtx {
@@ -128,7 +129,7 @@ static int mvsw_sdma_buf_desc_alloc(struct mvsw_pr_rxtx_sdma *sdma,
 	struct mvsw_sdma_desc *desc;
 	dma_addr_t dma;
 
-	desc = dma_pool_alloc(sdma->desc_pool, GFP_DMA | GFP_KERNEL, &dma);
+	desc = dma_pool_alloc(sdma->desc_pool, sdma->dma_flags | GFP_KERNEL, &dma);
 	if (!desc)
 		return -ENOMEM;
 
@@ -180,22 +181,23 @@ static int mvsw_sdma_rx_dma_alloc(struct mvsw_pr_rxtx_sdma *sdma,
 {
 	struct device *dev = sdma->sw->dev->dev;
 
-	buf->skb = alloc_skb(SDMA_BUFF_SIZE_MAX, GFP_DMA | GFP_ATOMIC);
+	buf->skb = alloc_skb(SDMA_BUFF_SIZE_MAX, sdma->dma_flags | GFP_ATOMIC);
 	if (!buf->skb)
 		return -ENOMEM;
 
-	buf->buf_dma = dma_map_single(dev, buf->skb->data, buf->skb->len,
+	buf->buf_dma = dma_map_single(dev, buf->skb->data, SDMA_BUFF_SIZE_MAX,
 				      DMA_FROM_DEVICE);
 
 	if (dma_mapping_error(dev, buf->buf_dma))
 		goto err_dma_map;
-	if (buf->buf_dma + buf->skb->len > sdma->dma_mask)
+	if (buf->buf_dma + SDMA_BUFF_SIZE_MAX > sdma->dma_mask)
 		goto err_dma_range;
 
 	return 0;
 
 err_dma_range:
-	dma_unmap_single(dev, buf->buf_dma, buf->skb->len, DMA_FROM_DEVICE);
+	dma_unmap_single(dev, buf->buf_dma, SDMA_BUFF_SIZE_MAX,
+			 DMA_FROM_DEVICE);
 	buf->buf_dma = DMA_MAPPING_ERROR;
 err_dma_map:
 	kfree_skb(buf->skb);
@@ -377,7 +379,8 @@ rx_reset_buf:
 	}
 
 	if (pkts_done < budget && napi_complete_done(napi, pkts_done))
-		mvsw_reg_write(sdma->sw, SDMA_RX_INTR_MASK_REG, 0xff << 2);
+		mvsw_reg_write(sdma->sw, SDMA_RX_INTR_MASK_REG,
+			       (0xff << 2) | (0xff << 11));
 
 	netif_receive_skb_list(&rx_list);
 
@@ -409,7 +412,8 @@ static void mvsw_sdma_rx_fini(struct mvsw_pr_rxtx_sdma *sdma)
 
 			if (buf->buf_dma != DMA_MAPPING_ERROR)
 				dma_unmap_single(sdma->sw->dev->dev,
-						 buf->buf_dma, buf->skb->len,
+						 buf->buf_dma,
+						 SDMA_BUFF_SIZE_MAX,
 						 DMA_FROM_DEVICE);
 			kfree_skb(buf->skb);
 		}
@@ -530,7 +534,7 @@ static int mvsw_sdma_tx_buf_map(struct mvsw_pr_rxtx_sdma *sdma,
 	if (!dma_mapping_error(dma_dev, dma))
 		dma_unmap_single(dma_dev, dma, len, DMA_TO_DEVICE);
 
-	new_skb = alloc_skb(len, GFP_ATOMIC | GFP_DMA);
+	new_skb = alloc_skb(len, GFP_ATOMIC | sdma->dma_flags);
 	if (!new_skb)
 		goto err_alloc_skb;
 
@@ -715,6 +719,7 @@ int prestera_rxtx_switch_init(struct prestera_switch *sw)
 		goto err_hw_rxtx_init;
 	}
 
+	sdma->dma_flags = sw->dev->dma_flags;
 	sdma->dma_mask = dma_get_mask(sw->dev->dev);
 	sdma->sw = sw;
 
@@ -775,6 +780,7 @@ void prestera_rxtx_switch_fini(struct prestera_switch *sw)
 	mvsw_sdma_tx_fini(sdma);
 	dma_pool_destroy(sdma->desc_pool);
 	kfree(sw->rxtx);
+	sw->rxtx = NULL;
 	kfree(cpu_code_stats);
 }
 
@@ -867,6 +873,9 @@ netdev_tx_t prestera_rxtx_xmit(struct sk_buff *skb, struct prestera_port *port)
 	struct mvsw_pr_dsa dsa;
 	u64 skb_len = skb->len;
 
+	if (unlikely(!port->sw || !port->sw->rxtx))
+		goto tx_drop;
+
 	/* common DSA tag fill-up */
 	memset(&dsa, 0, sizeof(dsa));
 	dsa.dsa_cmd = MVSW_NET_DSA_CMD_FROM_CPU_E;
@@ -896,17 +905,17 @@ netdev_tx_t prestera_rxtx_xmit(struct sk_buff *skb, struct prestera_port *port)
 	/* } */
 
 	if (skb_cow_head(skb, dsa_resize_len) < 0)
-		goto tx_drop;
+		goto tx_drop_stats_inc;
 
 	/* expects skb->data at mac header */
 	skb_push(skb, dsa_resize_len);
 	memmove(skb->data, skb->data + dsa_resize_len, 2 * ETH_ALEN);
 
 	if (mvsw_pr_dsa_build(&dsa, skb->data + 2 * ETH_ALEN) != 0)
-		goto tx_drop;
+		goto tx_drop_stats_inc;
 
 	if (mvsw_pr_rxtx_sdma_xmit(port->sw->rxtx, skb))
-		goto tx_drop;
+		goto tx_drop_stats_inc;
 
 	rxtx_stats = this_cpu_ptr(port->rxtx_stats);
 	u64_stats_update_begin(&rxtx_stats->syncp);
@@ -916,9 +925,10 @@ netdev_tx_t prestera_rxtx_xmit(struct sk_buff *skb, struct prestera_port *port)
 
 	return NETDEV_TX_OK;
 
+tx_drop_stats_inc:
+	this_cpu_inc(port->rxtx_stats->tx_dropped);
 tx_drop:
 	dev_kfree_skb_any(skb);
-	this_cpu_inc(port->rxtx_stats->tx_dropped);
 	return NET_XMIT_DROP;
 }
 
