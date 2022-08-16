@@ -179,9 +179,59 @@ enum prestera_hw_cpu_code_cnt_t {
 	PRESTERA_HW_CPU_CODE_CNT_TYPE_TRAP = 1,
 };
 
-enum prestera_hw_vtcam_direction_t {
+enum {
 	PRESTERA_HW_VTCAM_DIR_INGRESS = 0,
 	PRESTERA_HW_VTCAM_DIR_EGRESS = 1,
+};
+
+enum {
+	PRESTERA_HW_COUNTER_CLIENT_INGRESS_LOOKUP_0 = 0,
+	PRESTERA_HW_COUNTER_CLIENT_INGRESS_LOOKUP_1 = 1,
+	PRESTERA_HW_COUNTER_CLIENT_INGRESS_LOOKUP_2 = 2,
+	PRESTERA_HW_COUNTER_CLIENT_EGRESS_LOOKUP = 3,
+};
+
+enum {
+	PRESTERA_HW_QOS_TRUST_MODE_L2 = 0,
+	PRESTERA_HW_QOS_TRUST_MODE_L3 = 1,
+};
+
+enum {
+	PRESTERA_SCT_ALL_UNSPECIFIED_CPU_OPCODES,
+	PRESTERA_SCT_ACL_TRAP_QUEUE_0,
+	PRESTERA_SCT_ACL_TRAP_QUEUE_1,
+	PRESTERA_SCT_ACL_TRAP_QUEUE_2,
+	PRESTERA_SCT_ACL_TRAP_QUEUE_3,
+	PRESTERA_SCT_ACL_TRAP_QUEUE_4,
+	PRESTERA_SCT_ACL_TRAP_QUEUE_5,
+	PRESTERA_SCT_ACL_TRAP_QUEUE_6,
+	PRESTERA_SCT_ACL_TRAP_QUEUE_7,
+	PRESTERA_SCT_STP,
+	PRESTERA_SCT_LACP,
+	PRESTERA_SCT_LLDP,
+	PRESTERA_SCT_CDP,
+	PRESTERA_SCT_ARP_INTERVENTION,
+	PRESTERA_SCT_ARP_TO_ME,
+	PRESTERA_SCT_BGP_ALL_ROUTERS_MC,
+	PRESTERA_SCT_VRRP,
+	PRESTERA_SCT_IP_BC,
+	PRESTERA_SCT_IP_TO_ME,
+	PRESTERA_SCT_DEFAULT_ROUTE,
+	PRESTERA_SCT_BGP,
+	PRESTERA_SCT_SSH,
+	PRESTERA_SCT_TELNET,
+	PRESTERA_SCT_DHCP,
+	PRESTERA_SCT_ICMP,
+	PRESTERA_SCT_IGMP,
+	PRESTERA_SCT_SPECIAL_IP4_ICMP_REDIRECT,
+	PRESTERA_SCT_SPECIAL_IP4_OPTIONS_IN_IP_HDR,
+	PRESTERA_SCT_SPECIAL_IP4_MTU_EXCEED,
+	PRESTERA_SCT_SPECIAL_IP4_ZERO_TTL,
+	PRESTERA_SCT_OSPF,
+	PRESTERA_SCT_ISIS,
+	PRESTERA_SCT_NAT,
+
+	PRESTERA_SCT_MAX
 };
 
 struct prestera_switch;
@@ -195,7 +245,6 @@ struct prestera_neigh_info;
 struct prestera_counter_stats;
 struct prestera_acl_iface;
 
-enum prestera_counter_client;
 enum prestera_event_type;
 struct prestera_event;
 
@@ -265,9 +314,15 @@ int prestera_hw_fdb_flush_vlan(const struct prestera_switch *sw, u16 vid,
 int prestera_hw_fdb_flush_port_vlan(const struct prestera_port *port, u16 vid,
 				    u32 mode);
 int prestera_hw_macvlan_add(const struct prestera_switch *sw, u16 vr_id,
-			    const u8 *mac, u16 vid);
+			    const u8 *mac, u16 vid,
+			    struct prestera_iface *iface);
 int prestera_hw_macvlan_del(const struct prestera_switch *sw, u16 vr_id,
-			    const u8 *mac, u16 vid);
+			    const u8 *mac, u16 vid,
+			    struct prestera_iface *iface);
+int prestera_hw_fdb_routed_add(const struct prestera_switch *sw,
+			       const u8 *mac, u16 vid);
+int prestera_hw_fdb_routed_del(const struct prestera_switch *sw,
+			       const u8 *mac, u16 vid);
 
 /* Bridge API */
 int prestera_hw_bridge_create(const struct prestera_switch *sw, u16 *bridge_id);
@@ -286,10 +341,8 @@ int prestera_hw_counter_abort(const struct prestera_switch *sw);
 int prestera_hw_counters_get(const struct prestera_switch *sw, u32 idx,
 			     u32 *len, bool *done,
 			     struct prestera_counter_stats *stats);
-int prestera_hw_counter_block_get(const struct prestera_switch *sw,
-				  enum prestera_counter_client client,
-				  u32 *block_id, u32 *offset,
-				  u32 *num_counters);
+int prestera_hw_counter_block_get(const struct prestera_switch *sw, u32 client,
+				  u32 *block_id, u32 *offset, u32 *num_counters);
 int prestera_hw_counter_block_release(const struct prestera_switch *sw,
 				      u32 block_id);
 int prestera_hw_counter_clear(const struct prestera_switch *sw, u32 block_id,
@@ -298,7 +351,7 @@ int prestera_hw_counter_clear(const struct prestera_switch *sw, u32 block_id,
 /* vTCAM API */
 int prestera_hw_vtcam_create(const struct prestera_switch *sw,
 			     u8 lookup, const u32 *keymask, u32 *vtcam_id,
-			     enum prestera_hw_vtcam_direction_t direction);
+			     u8 direction);
 int prestera_hw_vtcam_rule_add(const struct prestera_switch *sw, u32 vtcam_id,
 			       u32 prio, void *key, void *keymask,
 			       struct prestera_acl_hw_action_info *act,
@@ -344,13 +397,16 @@ int prestera_hw_rif_set(const struct prestera_switch *sw, u16 *rif_id,
 /* Virtual Router API */
 int prestera_hw_vr_create(const struct prestera_switch *sw, u16 *vr_id);
 int prestera_hw_vr_delete(const struct prestera_switch *sw, u16 vr_id);
-int prestera_hw_vr_abort(const struct prestera_switch *sw, u16 vr_id);
 
 /* LPM API */
 int prestera_hw_lpm_add(const struct prestera_switch *sw, u16 vr_id,
 			__be32 dst, u32 dst_len, u32 grp_id);
 int prestera_hw_lpm_del(const struct prestera_switch *sw, u16 vr_id, __be32 dst,
 			u32 dst_len);
+int prestera_hw_lpm6_add(const struct prestera_switch *sw, u16 vr_id,
+			 __u8 *dst, u32 dst_len, u32 grp_id);
+int prestera_hw_lpm6_del(const struct prestera_switch *sw, u16 vr_id,
+			 __u8 *dst, u32 dst_len);
 
 /* NH API */
 int prestera_hw_nh_entries_set(const struct prestera_switch *sw, int count,
@@ -409,5 +465,59 @@ int
 prestera_hw_cpu_code_counters_get(const struct prestera_switch *sw, u8 code,
 				  enum prestera_hw_cpu_code_cnt_t counter_type,
 				  u64 *packet_count);
+
+/* Flood domain / MDB API */
+int prestera_hw_flood_domain_create(struct prestera_flood_domain *domain);
+int prestera_hw_flood_domain_destroy(struct prestera_flood_domain *domain);
+int prestera_hw_flood_domain_ports_set(struct prestera_flood_domain *domain);
+int prestera_hw_flood_domain_ports_reset(struct prestera_flood_domain *domain);
+
+int prestera_hw_mdb_create(struct prestera_mdb_entry *mdb);
+int prestera_hw_mdb_destroy(struct prestera_mdb_entry *mdb);
+
+/* HW IPG API */
+int prestera_hw_ipg_set(struct prestera_switch *sw, u32 ipg);
+int prestera_hw_ipg_get(struct prestera_switch *sw, u32 *ipg);
+
+/* QoS */
+int prestera_hw_port_qos_mapping_update(const struct prestera_port *port,
+					struct dcb_ieee_app_dscp_map *map);
+int prestera_hw_port_qos_trust_mode_set(const struct prestera_port *port,
+					u8 mode);
+int prestera_hw_port_qos_default_prio_set(const struct prestera_port *port,
+					  u32 priority);
+
+/* QoS Scheduler */
+int prestera_hw_sched_create(const struct prestera_switch *sw, u32 *sched_id);
+int prestera_hw_sched_sdwrr_set(const struct prestera_port *port,
+				u8 tc, u32 sched_id, u32 weight);
+int prestera_hw_sched_sp_set(const struct prestera_port *port,
+			     u8 tc, u32 sched_id);
+int prestera_hw_sched_release(const struct prestera_switch *sw, u32 sched_id);
+int prestera_hw_sched_port_set(const struct prestera_port *port, u32 sched_id);
+int prestera_hw_sched_port_get(const struct prestera_port *port, u32 *sched_id);
+
+/* QoS Shaper */
+int prestera_hw_shaper_port_queue_configure(const struct prestera_port *port,
+					    u32 tc, u32 rate, u32 burst);
+int prestera_hw_shaper_port_queue_disable(const struct prestera_port *port,
+					  u32 tc);
+int prestera_hw_port_queue_stats_get(const struct prestera_port *port,
+				     u8 tc, u64 *pkts, u64 *bytes,
+				     u64 *drops);
+
+/* QoS Congestion Avoidance */
+int prestera_hw_wred_port_queue_enable(const struct prestera_port *port,
+				       u32 tc, u32 min, u32 max, u32 prob);
+int prestera_hw_wred_port_queue_disable(const struct prestera_port *port,
+					u32 tc);
+
+/* SCT configuration API */
+int
+prestera_hw_sct_ratelimit_set(const struct prestera_switch *sw, u8 group,
+			      u32 rate);
+int
+prestera_hw_sct_ratelimit_get(const struct prestera_switch *sw, u8 group,
+			      u32 *rate);
 
 #endif /* _PRESTERA_HW_H_ */

@@ -185,16 +185,6 @@ static void prestera_vr_put(struct prestera_switch *sw, struct prestera_vr *vr)
 		__prestera_vr_destroy(sw, vr);
 }
 
-/* TODO: use router_hw_abort. Make this static */
-void prestera_vr_util_hw_abort(struct prestera_switch *sw)
-{
-	struct prestera_vr *vr, *vr_tmp;
-
-	list_for_each_entry_safe(vr, vr_tmp,
-				 &sw->router->vr_list, router_node)
-		prestera_hw_vr_abort(sw, vr->hw_vr_id);
-}
-
 /* make good things. iface is overhead struct... crutch
  * TODO May be it must be union + vr_id should be removed
  */
@@ -245,7 +235,7 @@ static int __prestera_rif_entry_macvlan_add(const struct prestera_switch *sw,
 	 * Now it is inconsistent.
 	 */
 	err = prestera_hw_macvlan_add(sw, e->vr->hw_vr_id, addr,
-				      e->key.iface.vlan_id);
+				      e->key.iface.vlan_id, &e->key.iface);
 	if (err)
 		goto err_hw;
 
@@ -268,7 +258,7 @@ __prestera_rif_entry_macvlan_del(const struct prestera_switch *sw,
 	int err;
 
 	err = prestera_hw_macvlan_del(sw, e->vr->hw_vr_id, n->addr,
-				      e->key.iface.vlan_id);
+				      e->key.iface.vlan_id, &e->key.iface);
 	if (err)
 		pr_err("%s:%d failed to delete macvlan from hw err = %d",
 		       __func__, __LINE__, err);
@@ -706,8 +696,13 @@ static void __prestera_fib_node_destruct(struct prestera_switch *sw,
 	struct prestera_vr *vr;
 
 	vr = fib_node->info.vr;
-	prestera_lpm_del(sw, vr->hw_vr_id, &fib_node->key.addr,
-			 fib_node->key.prefix_len);
+	if (fib_node->key.addr.v == PRESTERA_IPV4)
+		prestera_lpm_del(sw, vr->hw_vr_id, &fib_node->key.addr,
+				 fib_node->key.prefix_len);
+	else if (fib_node->key.addr.v == PRESTERA_IPV6)
+		prestera_lpm6_del(sw, vr->hw_vr_id, &fib_node->key.addr,
+				  fib_node->key.prefix_len);
+
 	switch (fib_node->info.type) {
 	case PRESTERA_FIB_TYPE_UC_NH:
 		fib_node->info.nh_grp->ref_cnt--;
@@ -803,8 +798,15 @@ prestera_fib_node_create(struct prestera_switch *sw,
 		goto err_nh_grp_get;
 	}
 
-	err = prestera_lpm_add(sw, vr->hw_vr_id, &key->addr,
-			       key->prefix_len, grp_id);
+	if (key->addr.v == PRESTERA_IPV4)
+		err = prestera_lpm_add(sw, vr->hw_vr_id, &key->addr,
+				       key->prefix_len, grp_id);
+	else if (key->addr.v == PRESTERA_IPV6)
+		err = prestera_lpm6_add(sw, vr->hw_vr_id, &key->addr,
+					key->prefix_len, grp_id);
+	else
+		err = -EOPNOTSUPP;
+
 	if (err)
 		goto err_lpm_add;
 
@@ -816,7 +818,11 @@ prestera_fib_node_create(struct prestera_switch *sw,
 	return fib_node;
 
 err_ht_insert:
-	prestera_lpm_del(sw, vr->hw_vr_id, &key->addr, key->prefix_len);
+	if (key->addr.v == PRESTERA_IPV4)
+		prestera_lpm_del(sw, vr->hw_vr_id, &key->addr, key->prefix_len);
+	else if (key->addr.v == PRESTERA_IPV6)
+		prestera_lpm6_del(sw, vr->hw_vr_id,
+				  &key->addr, key->prefix_len);
 err_lpm_add:
 	if (fib_type == PRESTERA_FIB_TYPE_UC_NH) {
 		fib_node->info.nh_grp->ref_cnt--;

@@ -81,10 +81,10 @@ static int prestera_ct_chain_init(struct prestera_ct_priv *priv)
 	struct prestera_acl_rule_entry_arg re_arg;
 	struct prestera_acl_iface iface;
 	u16 pcl_id;
+	u32 uid = 0;
 	int err;
-	u8 uid;
 
-	err = prestera_acl_uid_new_get(priv->acl, &uid);
+	err = idr_alloc_u32(&priv->acl->uid, NULL, &uid, U8_MAX, GFP_KERNEL);
 	if (err)
 		return err;
 
@@ -100,6 +100,7 @@ static int prestera_ct_chain_init(struct prestera_ct_priv *priv)
 	rule_match_set_u16(re_key.match.mask, L4_PORT_DST, 0xFFFF);
 
 	err = prestera_acl_vtcam_id_get(priv->acl, PRESTERA_ACL_CT_CHAIN,
+					PRESTERA_HW_VTCAM_DIR_INGRESS,
 					re_key.match.mask, &priv->vtcam_id);
 	if (err)
 		goto err_vtcam_create;
@@ -143,7 +144,7 @@ err_rule_entry_create:
 err_rule_entry_bind:
 	prestera_acl_vtcam_id_put(priv->acl, priv->vtcam_id);
 err_vtcam_create:
-	prestera_acl_uid_release(priv->acl, uid);
+	idr_remove(&priv->acl->uid, uid);
 	return err;
 }
 
@@ -180,8 +181,7 @@ void prestera_ct_clean(struct prestera_ct_priv *ct_priv)
 
 	prestera_acl_rule_entry_destroy(ct_priv->acl, ct_priv->re);
 	prestera_acl_vtcam_id_put(ct_priv->acl, ct_priv->vtcam_id);
-	prestera_acl_uid_release(ct_priv->acl, uid);
-
+	idr_remove(&ct_priv->acl->uid, uid);
 	rhashtable_destroy(&ct_priv->zone_ht);
 	kfree(ct_priv);
 }
@@ -478,14 +478,11 @@ prestera_ct_block_flow_offload_add(struct prestera_ct_ft *ft,
 
 	/* setup counter */
 	entry->tuple.re_arg.count.valid = true;
-	entry->tuple.re_arg.count.fail_on_err = true;
-	entry->tuple.re_arg.count.client =
-		prestera_acl_chain_to_client(PRESTERA_ACL_CT_CHAIN);
-	if (entry->tuple.re_arg.count.client ==
-	    PRESTERA_COUNTER_CLIENT_LOOKUP_LAST) {
-		err = -EINVAL;
+	err = prestera_acl_chain_to_client(PRESTERA_ACL_CT_CHAIN,
+					   true /* ingress */,
+					   &entry->tuple.re_arg.count.client);
+	if (err)
 		goto err_set;
-	}
 
 	err = __prestera_ct_tuple_get_nh(ft->ct_priv->acl->sw, &entry->tuple);
 	if (err)

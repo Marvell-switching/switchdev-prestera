@@ -345,32 +345,6 @@ static void prestera_port_mdix_cache(struct prestera_port *port)
 	}
 }
 
-static void prestera_port_link_mode_cache(struct prestera_port *port)
-{
-	struct prestera_port_mac_state *state = &port->state_mac;
-	u32 speed;
-	u8 duplex;
-	int err;
-
-	if (!port->state_mac.oper)
-		return;
-
-	if (state->speed == SPEED_UNKNOWN ||
-	    state->duplex == DUPLEX_UNKNOWN) {
-
-		err = prestera_hw_port_mac_mode_get(port, NULL, &speed,
-						    &duplex, NULL);
-		if (err) {
-			state->speed = SPEED_UNKNOWN;
-			state->duplex = DUPLEX_UNKNOWN;
-		} else {
-			state->speed = speed;
-			state->duplex = duplex == PRESTERA_PORT_DUPLEX_FULL ?
-					  DUPLEX_FULL : DUPLEX_HALF;
-		}
-	}
-}
-
 static void prestera_port_mdix_get(struct ethtool_link_ksettings *ecmd,
 				   struct prestera_port *port)
 {
@@ -562,10 +536,20 @@ static void prestera_port_supp_types_get(struct ethtool_link_ksettings *ecmd,
 static void prestera_port_link_mode_get(struct ethtool_link_ksettings *ecmd,
 					struct prestera_port *port)
 {
-	prestera_port_link_mode_cache(port);
+	struct prestera_port_mac_state state;
 
-	ecmd->base.speed = port->state_mac.speed;
-	ecmd->base.duplex = port->state_mac.duplex;
+	/* We don't need explicity read state from FW,
+	 * because there are events
+	 */
+	prestera_port_mac_state_cache_read(port, &state);
+
+	if (state.valid) {
+		ecmd->base.speed = state.speed;
+		ecmd->base.duplex = state.duplex;
+	} else {
+		ecmd->base.speed = SPEED_UNKNOWN;
+		ecmd->base.duplex = DUPLEX_UNKNOWN;
+	}
 }
 
 static void prestera_port_get_drvinfo(struct net_device *dev,
@@ -679,20 +663,19 @@ static int prestera_port_get_link_ksettings(struct net_device *dev,
 #endif /* CONFIG_PHYLINK */
 
 	prestera_port_supp_types_get(ecmd, port);
-
 	prestera_port_autoneg_get(ecmd, port);
-
-	if (port->autoneg && netif_carrier_ok(dev) &&
-	    port->caps.transceiver == PRESTERA_PORT_TCVR_COPPER)
-		prestera_port_remote_cap_get(ecmd, port);
+	prestera_port_type_get(ecmd, port);
 
 	if (netif_carrier_ok(dev))
 		prestera_port_link_mode_get(ecmd, port);
 
-	prestera_port_type_get(ecmd, port);
+	if (port->caps.transceiver == PRESTERA_PORT_TCVR_SFP)
+		return 0;
 
-	if (port->caps.type == PRESTERA_PORT_TYPE_TP &&
-	    port->caps.transceiver == PRESTERA_PORT_TCVR_COPPER)
+	if (port->autoneg && netif_carrier_ok(dev))
+		prestera_port_remote_cap_get(ecmd, port);
+
+	if (port->caps.type == PRESTERA_PORT_TYPE_TP)
 		prestera_port_mdix_get(ecmd, port);
 
 	return 0;
@@ -703,6 +686,7 @@ static int prestera_port_set_link_ksettings(struct net_device *dev,
 					    *ecmd)
 {
 	struct prestera_port *port = netdev_priv(dev);
+	struct prestera_port_mac_config cfg_mac;
 	u64 adver_modes = 0;
 	u8 adver_fec = 0;
 	int err;
@@ -716,11 +700,31 @@ static int prestera_port_set_link_ksettings(struct net_device *dev,
 	if (err)
 		return err;
 
-	if (port->caps.transceiver == PRESTERA_PORT_TCVR_COPPER) {
-		err = prestera_port_mdix_set(ecmd, port);
-		if (err)
-			return err;
+	if (port->caps.transceiver == PRESTERA_PORT_TCVR_SFP) {
+		prestera_port_cfg_mac_read(port, &cfg_mac);
+		switch (ecmd->base.speed) {
+		case SPEED_1000:
+			cfg_mac.mode = PRESTERA_MAC_MODE_1000BASE_X;
+			cfg_mac.inband = false;
+			break;
+		case SPEED_10000:
+			cfg_mac.mode = PRESTERA_MAC_MODE_SR_LR;
+			cfg_mac.speed = SPEED_10000;
+			cfg_mac.inband = false;
+			break;
+		default:
+			cfg_mac.mode = PRESTERA_MAC_MODE_SGMII;
+			cfg_mac.speed = 0;
+			cfg_mac.duplex = DUPLEX_UNKNOWN;
+			cfg_mac.inband = true;
+		}
+
+		return prestera_port_cfg_mac_write(port, &cfg_mac);
 	}
+
+	err = prestera_port_mdix_set(ecmd, port);
+	if (err)
+		return err;
 
 	if (ecmd->base.autoneg == AUTONEG_ENABLE) {
 		if (prestera_modes_from_eth(port, ecmd->link_modes.advertising,
@@ -861,28 +865,6 @@ static void prestera_port_get_strings(struct net_device *dev,
 		return;
 
 	memcpy(data, *prestera_port_cnt_name, sizeof(prestera_port_cnt_name));
-}
-
-void prestera_ethtool_port_state_changed(struct prestera_port *port,
-					 struct prestera_port_event *evt)
-{
-	struct prestera_port_mac_state *smac = &port->state_mac;
-
-	smac->oper = evt->data.mac.oper;
-
-	if (smac->oper) {
-		smac->mode = evt->data.mac.mode;
-		smac->speed = evt->data.mac.speed;
-		smac->duplex = evt->data.mac.duplex;
-		smac->fc = evt->data.mac.fc;
-		smac->fec = evt->data.mac.fec;
-	} else {
-		smac->mode = PRESTERA_MAC_MODE_MAX;
-		smac->speed = SPEED_UNKNOWN;
-		smac->duplex = DUPLEX_UNKNOWN;
-		smac->fc = 0;
-		smac->fec = 0;
-	}
 }
 
 const struct ethtool_ops prestera_ethtool_ops = {

@@ -6,14 +6,6 @@
 
 #include <linux/types.h>
 
-enum prestera_counter_client {
-	PRESTERA_COUNTER_CLIENT_LOOKUP_0,
-	PRESTERA_COUNTER_CLIENT_LOOKUP_1,
-	PRESTERA_COUNTER_CLIENT_LOOKUP_2,
-
-	PRESTERA_COUNTER_CLIENT_LOOKUP_LAST
-};
-
 struct prestera_counter_stats {
 	u64 packets;
 	u64 bytes;
@@ -24,8 +16,7 @@ struct prestera_counter_block;
 int prestera_counter_init(struct prestera_switch *sw);
 void prestera_counter_fini(struct prestera_switch *sw);
 
-int prestera_counter_get(struct prestera_counter *counter,
-			 enum prestera_counter_client client,
+int prestera_counter_get(struct prestera_counter *counter, u32 client,
 			 struct prestera_counter_block **block,
 			 u32 *counter_id);
 void prestera_counter_put(struct prestera_counter *counter,
